@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>于果的个人摄影集</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- 登录模态框 -->
+    <div class="login-modal" id="loginModal">
+        <div class="login-content">
+            <h2>管理员登录</h2>
+            <div class="login-form">
+                <input type="password" id="adminPassword" placeholder="请输入管理员密码" class="login-input">
+                <button id="loginBtn" class="login-btn">登录</button>
+                <button id="guestBtn" class="guest-btn">游客访问</button>
+            </div>
+            <div class="login-error" id="loginError" style="display: none;">密码错误，请重试</div>
+        </div>
+    </div>
+
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <h1 class="nav-title">果子的摄影世界</h1>
+            <div class="nav-menu">
+                <a href="#gallery" class="nav-link">摄影作品</a>
+                <a href="#about" class="nav-link">关于我</a>
+                <a href="#upload" class="nav-link admin-only" style="display: none;">上传作品</a>
+                <a href="#notebook" class="nav-link admin-only" style="display: none;">成长记录</a>
+                <button id="logoutBtn" class="logout-btn admin-only" style="display: none;">退出登录</button>
+                <span class="user-status" id="userStatus">游客模式</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主页横幅 -->
+    <section class="hero">
+        <div class="hero-content">
+            <h2 class="hero-title">捕捉生活中的美好瞬间</h2>
+            <p class="hero-subtitle">用镜头记录世界，用心感受生活</p>
+        </div>
+    </section>
+
+    <!-- 摄影作品展示区 -->
+    <section id="gallery" class="gallery-section">
+        <div class="container">
+            <h2 class="section-title">摄影作品</h2>
+            
+            <!-- 分类筛选 -->
+            <div class="category-filter">
+                <button class="filter-btn active" data-category="all">全部</button>
+                <button class="filter-btn" data-category="portrait">人像</button>
+                <button class="filter-btn" data-category="nature">自然景观</button>
+                <button class="filter-btn" data-category="social">社会景观</button>
+                <button class="filter-btn admin-only" data-category="love" style="display: none;">恋爱空间</button>
+                <button class="filter-btn" data-category="custom">自定义</button>
+            </div>
+
+            <!-- 图片管理工具栏 -->
+            <div class="photo-management admin-only" style="display: none;">
+                <div class="management-tools">
+                    <input type="text" id="searchInput" placeholder="搜索图片标题或描述..." class="search-input">
+                    <button id="searchBtn" class="tool-btn">🔍 搜索</button>
+                    <button id="clearSearchBtn" class="tool-btn">清除搜索</button>
+                    <button id="selectAllBtn" class="tool-btn">全选</button>
+                    <button id="deleteSelectedBtn" class="tool-btn delete-btn">🗑️ 删除选中</button>
+                </div>
+            </div>
+
+            <!-- 图片展示网格 -->
+            <div class="gallery-grid" id="galleryGrid">
+                <!-- 图片将通过JavaScript动态加载 -->
+            </div>
+        </div>
+    </section>
+
+    <!-- 图片上传区 -->
+    <section id="upload" class="upload-section admin-only" style="display: none;">
+        <div class="container">
+            <h2 class="section-title">上传新作品</h2>
+            
+            <div class="upload-container">
+                <div class="upload-form">
+                    <div class="form-group">
+                        <label for="imageCategory">选择分类：</label>
+                        <select id="imageCategory" class="form-select">
+                            <option value="portrait">人像</option>
+                            <option value="nature">自然景观</option>
+                            <option value="social">社会景观</option>
+                            <option value="love">恋爱空间</option>
+                            <option value="custom">自定义分类</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" id="customCategoryGroup" style="display: none;">
+                        <label for="customCategory">自定义分类名称：</label>
+                        <input type="text" id="customCategory" class="form-input" placeholder="请输入分类名称">
+                        
+                        <div class="checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="guestVisible" checked>
+                                <span class="checkmark"></span>
+                                游客模式可见
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="imageTitle">作品标题：</label>
+                        <input type="text" id="imageTitle" class="form-input" placeholder="为你的作品起个名字">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="imageDescription">作品描述：</label>
+                        <textarea id="imageDescription" class="form-textarea" placeholder="分享这张照片背后的故事..."></textarea>
+                    </div>
+                    
+                    <div class="upload-area" id="uploadArea">
+                        <div class="upload-content">
+                            <div class="upload-icon">📷</div>
+                            <p>点击或拖拽图片到这里上传</p>
+                            <input type="file" id="imageInput" accept="image/*" multiple style="display: none;">
+                        </div>
+                    </div>
+                    
+                    <button class="upload-btn" id="uploadBtn">上传作品</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 记事本模块 -->
+    <section id="notebook" class="notebook-section admin-only" style="display: none;">
+        <div class="container">
+            <h2 class="section-title">成长记录</h2>
+            
+            <div class="notebook-container">
+                <div class="notebook-sidebar">
+                    <button class="new-note-btn" id="newNoteBtn">+ 新建记录</button>
+                    <div class="notes-list" id="notesList">
+                        <!-- 记录列表将通过JavaScript动态加载 -->
+                    </div>
+                </div>
+                
+                <div class="notebook-editor">
+                    <div class="editor-header">
+                        <input type="text" id="noteTitle" class="note-title-input" placeholder="记录标题...">
+                        <div class="editor-actions">
+                            <button class="save-btn" id="saveNoteBtn">保存</button>
+                            <button class="export-btn" id="exportNoteBtn">导出</button>
+                            <button class="delete-btn" id="deleteNoteBtn">删除</button>
+                        </div>
+                    </div>
+                    
+                    <div class="editor-content">
+                        <textarea id="noteContent" class="note-editor" placeholder="在这里记录你的成长路径、摄影心得、生活感悟..."></textarea>
+                    </div>
+                    
+                    <div class="editor-footer">
+                        <span class="note-date" id="noteDate"></span>
+                        <span class="word-count" id="wordCount">0 字</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 关于我模块 -->
+    <section id="about" class="about-section">
+        <div class="container">
+            <h2 class="section-title">关于我</h2>
+            
+            <div class="about-container">
+                <div class="about-photo">
+                    <div class="photo-collage">
+                        <div class="photo-item photo-1"></div>
+                        <div class="photo-item photo-2"></div>
+                        <div class="photo-item photo-3"></div>
+                        <div class="photo-item photo-4"></div>
+                    </div>
+                </div>
+                
+                <div class="about-content">
+                    <h3 class="about-name" id="aboutName">于果</h3>
+                    <div class="about-description" id="aboutDescription">
+                        <p>热爱摄影的业余爱好者，擅长捕捉生活中的美好瞬间和自然风光。</p>
+                        <p>我是于果，一名热爱摄影的艺术爱好者。从2023年开始接触摄影，逐渐爱上了通过镜头记录生活，表达情感的方式。我擅长风景、人像和街拍摄影，尤其喜欢捕捉光影变化带来的奇妙效果。</p>
+                        <p>对我来说，摄影不仅是一种爱好，更是一种生活态度。通过镜头，我能够发现日常生活中被忽略的美，并将其定格成永恒。每一张照片背后都有一个故事，我希望通过我的作品，能让更多人分享我眼中的世界。</p>
+                    </div>
+                    
+                    <div class="contact-info">
+                        <div class="contact-item">
+                            <span class="contact-icon">📱</span>
+                            <span class="contact-label">微信：</span>
+                            <span class="contact-value" id="wechatContact">yuguo_photo</span>
+                            <button class="edit-btn admin-only" onclick="editContact('wechat')" style="display: none;">✏️</button>
+                        </div>
+                        <div class="contact-item">
+                            <span class="contact-icon">💬</span>
+                            <span class="contact-label">QQ：</span>
+                            <span class="contact-value" id="qqContact">123456789</span>
+                            <button class="edit-btn admin-only" onclick="editContact('qq')" style="display: none;">✏️</button>
+                        </div>
+                        <div class="contact-item">
+                            <span class="contact-icon">📧</span>
+                            <span class="contact-label">邮箱：</span>
+                            <span class="contact-value" id="emailContact">yuguo@example.com</span>
+                            <button class="edit-btn admin-only" onclick="editContact('email')" style="display: none;">✏️</button>
+                        </div>
+                    </div>
+                    
+
+                    
+                    <!-- 管理员编辑面板 -->
+                    <div class="admin-edit-panel admin-only" style="display: none;">
+                        <h4>编辑个人信息</h4>
+                        <div class="edit-form">
+                            <div class="form-group">
+                                <label>姓名：</label>
+                                <input type="text" id="editName" class="edit-input">
+                            </div>
+                            <div class="form-group">
+                                <label>个人简介：</label>
+                                <textarea id="editDescription" class="edit-textarea" rows="6"></textarea>
+                            </div>
+                            <div class="form-actions">
+                                <button class="save-btn" onclick="saveAboutInfo()">保存修改</button>
+                                <button class="cancel-btn" onclick="cancelEdit()">取消</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button class="edit-about-btn admin-only" onclick="toggleEditMode()" style="display: none;">编辑个人信息</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-info">
+                    <h3>于果摄影</h3>
+                    <p>保留所有权利</p>
+                    <p>邮箱: contact@yuguo-photo.com</p>
+                </div>
+                <div class="footer-copyright">
+                    <p>&copy; 2025 于果摄影. 保留所有权利</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 图片预览模态框 -->
+    <div class="modal" id="imageModal">
+        <div class="modal-content">
+            <span class="close" id="closeModal">&times;</span>
+            <img id="modalImage" src="" alt="">
+            <div class="modal-info">
+                <h3 id="modalTitle"></h3>
+                <p id="modalDescription"></p>
+                <span id="modalCategory"></span>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
