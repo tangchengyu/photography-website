@@ -287,7 +287,17 @@ function updateFolderSelect() {
     const folderSelect = document.getElementById('folderSelect');
     if (!folderSelect) return;
     
-    const currentCategory = getCurrentActiveCategory();
+    // 优先从上传页面的分类选择器获取分类，如果不存在则从图库页面获取
+    const uploadCategorySelect = document.getElementById('imageCategory');
+    let currentCategory;
+    
+    if (uploadCategorySelect && uploadCategorySelect.value && uploadCategorySelect.value !== 'custom') {
+        // 从上传页面的分类选择器获取
+        currentCategory = uploadCategorySelect.value;
+    } else {
+        // 从图库页面的激活按钮获取
+        currentCategory = getCurrentActiveCategory();
+    }
     
     // 清空现有选项（保留默认选项）
     folderSelect.innerHTML = '<option value="">默认文件夹</option>';
