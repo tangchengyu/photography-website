@@ -1566,58 +1566,78 @@ function addWatermarkToImage(imageSrc, callback) {
     const img = new Image();
     
     img.onload = function() {
-        // 设置画布尺寸
-        canvas.width = img.width;
-        canvas.height = img.height;
-        
-        // 绘制原图
-        ctx.drawImage(img, 0, 0);
-        
-        // 设置水印样式 - 对角线覆盖
-        const fontSize = Math.max(img.width * 0.06, 40); // 适中的字体大小
-        ctx.font = `600 ${fontSize}px 'Arial', 'Noto Sans SC', sans-serif`;
-        
-        // 计算对角线角度
-        const angle = Math.atan2(img.height, img.width);
-        
-        // 保存当前状态
-        ctx.save();
-        
-        // 移动到图片中心
-        ctx.translate(img.width / 2, img.height / 2);
-        
-        // 旋转到对角线角度
-        ctx.rotate(angle);
-        
-        // 设置文本对齐
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        
-        // 计算对角线长度
-        const diagonalLength = Math.sqrt(img.width * img.width + img.height * img.height);
-        
-        // 沿对角线重复绘制水印文字
-        const watermarkText = '嗷呜一口';
-        const textWidth = ctx.measureText(watermarkText).width;
-        const spacing = textWidth + 100; // 文字间距
-        const repeatCount = Math.ceil(diagonalLength / spacing) + 2;
-        
-        // 设置半透明浅灰色
-        ctx.fillStyle = 'rgba(160, 160, 160, 0.25)';
-        
-        // 沿对角线绘制多个水印
-        for (let i = -repeatCount; i <= repeatCount; i++) {
-            const x = i * spacing;
-            ctx.fillText(watermarkText, x, 0);
+        try {
+            // 设置画布尺寸
+            canvas.width = img.width;
+            canvas.height = img.height;
+            
+            // 绘制原图
+            ctx.drawImage(img, 0, 0);
+            
+            // 设置水印样式 - 对角线覆盖
+            const fontSize = Math.max(img.width * 0.06, 40); // 适中的字体大小
+            ctx.font = `600 ${fontSize}px 'Arial', 'Noto Sans SC', sans-serif`;
+            
+            // 计算对角线角度
+            const angle = Math.atan2(img.height, img.width);
+            
+            // 保存当前状态
+            ctx.save();
+            
+            // 移动到图片中心
+            ctx.translate(img.width / 2, img.height / 2);
+            
+            // 旋转到对角线角度
+            ctx.rotate(angle);
+            
+            // 设置文本对齐
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            // 计算对角线长度
+            const diagonalLength = Math.sqrt(img.width * img.width + img.height * img.height);
+            
+            // 沿对角线重复绘制水印文字
+            const watermarkText = '嗷呜一口';
+            const textWidth = ctx.measureText(watermarkText).width;
+            const spacing = textWidth + 100; // 文字间距
+            const repeatCount = Math.ceil(diagonalLength / spacing) + 2;
+            
+            // 设置半透明浅灰色
+            ctx.fillStyle = 'rgba(160, 160, 160, 0.25)';
+            
+            // 沿对角线绘制多个水印
+            for (let i = -repeatCount; i <= repeatCount; i++) {
+                const x = i * spacing;
+                ctx.fillText(watermarkText, x, 0);
+            }
+            
+            // 恢复状态
+            ctx.restore();
+            
+            // 转换为数据URL并回调
+            const watermarkedImage = canvas.toDataURL('image/jpeg', 0.9);
+            callback(watermarkedImage);
+        } catch (error) {
+            console.error('添加水印时出错:', error);
+            // 如果添加水印失败，返回原图
+            callback(imageSrc);
         }
-        
-        // 恢复状态
-        ctx.restore();
-        
-        // 转换为数据URL并回调
-        const watermarkedImage = canvas.toDataURL('image/jpeg', 0.9);
-        callback(watermarkedImage);
     };
+    
+    img.onerror = function(error) {
+        console.error('图片加载失败:', error);
+        // 如果图片加载失败，返回原图
+        callback(imageSrc);
+    };
+    
+    // 设置超时处理
+    setTimeout(() => {
+        if (!img.complete) {
+            console.warn('图片加载超时，使用原图');
+            callback(imageSrc);
+        }
+    }, 10000); // 10秒超时
     
     img.src = imageSrc;
 }
@@ -1793,7 +1813,7 @@ async function uploadImages() {
                 
                 // 即使出错也要检查是否完成
                 if (processedCount === files.length) {
-                    completeUpload();
+                    await completeUpload();
                 }
             }
         };
@@ -1804,7 +1824,10 @@ async function uploadImages() {
             
             // 即使出错也要检查是否完成
             if (processedCount === files.length) {
-                completeUpload();
+                completeUpload().catch(err => {
+                    console.error('完成上传时出错:', err);
+                    showErrorMessage('上传过程中出现错误，请重试');
+                });
             }
         };
         
@@ -2177,6 +2200,68 @@ function showSuccessMessage(message) {
     if (!document.querySelector('#successMessageStyle')) {
         const style = document.createElement('style');
         style.id = 'successMessageStyle';
+        style.textContent = `
+            @keyframes slideInRight {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+            @keyframes slideOutRight {
+                from {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+                to {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    document.body.appendChild(messageDiv);
+    
+    // 3秒后自动移除
+    setTimeout(() => {
+        messageDiv.style.animation = 'slideOutRight 0.3s ease-out';
+        setTimeout(() => {
+            if (messageDiv.parentNode) {
+                messageDiv.parentNode.removeChild(messageDiv);
+            }
+        }, 300);
+    }, 3000);
+}
+
+// 显示错误消息
+function showErrorMessage(message) {
+    // 创建消息元素
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'error-message';
+    messageDiv.textContent = message;
+    messageDiv.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: linear-gradient(45deg, #e17055, #d63031);
+        color: white;
+        padding: 15px 25px;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(214, 48, 49, 0.3);
+        z-index: 1000;
+        animation: slideInRight 0.3s ease-out;
+        font-weight: 500;
+    `;
+    
+    // 添加动画样式（如果还没有）
+    if (!document.querySelector('#errorMessageStyle')) {
+        const style = document.createElement('style');
+        style.id = 'errorMessageStyle';
         style.textContent = `
             @keyframes slideInRight {
                 from {

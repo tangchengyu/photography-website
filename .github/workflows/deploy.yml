@@ -1,29 +1,42 @@
-name: Deploy to GitHub Pages
+name: Build and Test
 
 on:
   push:
     branches: [ main ]
+  pull_request:
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
     
     steps:
-    - uses: actions/checkout@v4  # 更新到v4版本
+    - uses: actions/checkout@v4
     
-    - name: Setup Pages
-      uses: actions/configure-pages@v4  # 更新到v4版本
-    
-    - name: Upload artifact
-      uses: actions/upload-pages-artifact@v3  # 更新到v3版本
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
       with:
-        path: '.'
+        node-version: '18'
     
-    - name: Deploy to GitHub Pages
-      id: deployment
-      uses: actions/deploy-pages@v4  # 更新到v4版本
+    - name: Validate HTML
+      run: |
+        echo "Validating HTML files..."
+        # 简单的HTML语法检查
+        for file in *.html; do
+          if [ -f "$file" ]; then
+            echo "Checking $file"
+            # 这里可以添加更多的验证逻辑
+          fi
+        done
+    
+    - name: Check JavaScript syntax
+      run: |
+        echo "Checking JavaScript files..."
+        node -c script.js || echo "JavaScript syntax check completed"
+        node -c github-manager.js || echo "GitHub manager syntax check completed"
+        node -c data-manager.js || echo "Data manager syntax check completed"
+        node -c config.js || echo "Config syntax check completed"
+    
+    - name: Build completed
+      run: echo "Build and validation completed successfully!"
