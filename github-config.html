@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub配置 - 摄影作品集</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .config-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .config-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .config-header h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .config-header p {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group .help-text {
+            font-size: 12px;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        .form-group .help-text a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .form-group .help-text a:hover {
+            text-decoration: underline;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #666;
+            border: 2px solid #e1e5e9;
+        }
+
+        .btn-secondary:hover {
+            background: #e9ecef;
+        }
+
+        .btn-test {
+            background: #28a745;
+            color: white;
+            margin-top: 15px;
+            width: 100%;
+        }
+
+        .btn-test:hover {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(40, 167, 69, 0.3);
+        }
+
+        .status-message {
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-top: 15px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .current-config {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+
+        .current-config h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .config-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .config-item .label {
+            color: #666;
+            font-weight: 500;
+        }
+
+        .config-item .value {
+            color: #333;
+            font-family: monospace;
+        }
+
+        .btn-clear {
+            background: #dc3545;
+            color: white;
+            padding: 8px 16px;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .btn-clear:hover {
+            background: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <div class="config-container">
+        <div class="config-header">
+            <h1>GitHub云端配置</h1>
+            <p>配置GitHub仓库以启用云端同步功能</p>
+        </div>
+
+        <!-- 当前配置状态 -->
+        <div id="currentConfig" class="current-config" style="display: none;">
+            <h3>当前配置</h3>
+            <div class="config-item">
+                <span class="label">仓库:</span>
+                <span class="value" id="currentRepo">-</span>
+            </div>
+            <div class="config-item">
+                <span class="label">分支:</span>
+                <span class="value" id="currentBranch">-</span>
+            </div>
+            <div class="config-item">
+                <span class="label">状态:</span>
+                <span class="value" id="currentStatus">-</span>
+            </div>
+            <button type="button" class="btn btn-clear" onclick="clearConfig()">清除配置</button>
+        </div>
+
+        <form id="githubConfigForm">
+            <div class="form-group">
+                <label for="githubToken">GitHub Personal Access Token *</label>
+                <input type="password" id="githubToken" name="githubToken" required 
+                       placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+                <div class="help-text">
+                    需要 repo 和 workflow 权限。
+                    <a href="https://github.com/settings/tokens/new" target="_blank">创建新Token</a>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="githubOwner">GitHub用户名/组织名 *</label>
+                <input type="text" id="githubOwner" name="githubOwner" required 
+                       placeholder="your-username">
+                <div class="help-text">您的GitHub用户名或组织名</div>
+            </div>
+
+            <div class="form-group">
+                <label for="githubRepo">仓库名称 *</label>
+                <input type="text" id="githubRepo" name="githubRepo" required 
+                       placeholder="photography-website">
+                <div class="help-text">用于存储网站文件的仓库名称</div>
+            </div>
+
+            <div class="form-group">
+                <label for="githubBranch">分支名称</label>
+                <input type="text" id="githubBranch" name="githubBranch" 
+                       placeholder="main" value="main">
+                <div class="help-text">默认使用 main 分支</div>
+            </div>
+
+            <button type="button" class="btn btn-test" onclick="testConnection()">
+                <span id="testLoading" style="display: none;"><div class="loading"></div></span>
+                测试连接
+            </button>
+
+            <div class="button-group">
+                <button type="button" class="btn btn-secondary" onclick="goBack()">返回</button>
+                <button type="submit" class="btn btn-primary">保存配置</button>
+            </div>
+        </form>
+
+        <div id="statusMessage" class="status-message"></div>
+    </div>
+
+    <script src="github-manager.js"></script>
+    <script>
+        // 页面加载时显示当前配置
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCurrentConfig();
+        });
+
+        // 加载当前配置
+        function loadCurrentConfig() {
+            if (window.githubManager && window.githubManager.isConfigured()) {
+                document.getElementById('currentConfig').style.display = 'block';
+                document.getElementById('currentRepo').textContent = 
+                    `${window.githubManager.owner}/${window.githubManager.repo}`;
+                document.getElementById('currentBranch').textContent = window.githubManager.branch;
+                document.getElementById('currentStatus').textContent = '已配置';
+                
+                // 填充表单
+                document.getElementById('githubOwner').value = window.githubManager.owner;
+                document.getElementById('githubRepo').value = window.githubManager.repo;
+                document.getElementById('githubBranch').value = window.githubManager.branch;
+            }
+        }
+
+        // 清除配置
+        function clearConfig() {
+            if (confirm('确定要清除GitHub配置吗？这将禁用云端同步功能。')) {
+                window.githubManager.clearConfig();
+                document.getElementById('currentConfig').style.display = 'none';
+                document.getElementById('githubConfigForm').reset();
+                document.getElementById('githubBranch').value = 'main';
+                showMessage('配置已清除', 'info');
+            }
+        }
+
+        // 测试连接
+        async function testConnection() {
+            const token = document.getElementById('githubToken').value.trim();
+            const owner = document.getElementById('githubOwner').value.trim();
+            const repo = document.getElementById('githubRepo').value.trim();
+            const branch = document.getElementById('githubBranch').value.trim() || 'main';
+
+            if (!token || !owner || !repo) {
+                showMessage('请填写所有必填字段', 'error');
+                return;
+            }
+
+            const testBtn = document.querySelector('.btn-test');
+            const loading = document.getElementById('testLoading');
+            
+            testBtn.disabled = true;
+            loading.style.display = 'inline-block';
+
+            try {
+                // 临时保存配置进行测试
+                const originalConfig = {
+                    token: window.githubManager.token,
+                    owner: window.githubManager.owner,
+                    repo: window.githubManager.repo,
+                    branch: window.githubManager.branch
+                };
+
+                window.githubManager.saveConfig(token, owner, repo, branch);
+                
+                const result = await window.githubManager.testConnection();
+                
+                if (result.success) {
+                    showMessage(`连接成功！仓库: ${result.repoInfo.full_name}`, 'success');
+                } else {
+                    throw new Error('连接失败');
+                }
+            } catch (error) {
+                showMessage(`连接失败: ${error.message}`, 'error');
+                // 恢复原配置
+                if (originalConfig.token) {
+                    window.githubManager.saveConfig(
+                        originalConfig.token, 
+                        originalConfig.owner, 
+                        originalConfig.repo, 
+                        originalConfig.branch
+                    );
+                } else {
+                    window.githubManager.clearConfig();
+                }
+            } finally {
+                testBtn.disabled = false;
+                loading.style.display = 'none';
+            }
+        }
+
+        // 表单提交
+        document.getElementById('githubConfigForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const token = document.getElementById('githubToken').value.trim();
+            const owner = document.getElementById('githubOwner').value.trim();
+            const repo = document.getElementById('githubRepo').value.trim();
+            const branch = document.getElementById('githubBranch').value.trim() || 'main';
+
+            if (!token || !owner || !repo) {
+                showMessage('请填写所有必填字段', 'error');
+                return;
+            }
+
+            try {
+                // 保存配置
+                window.githubManager.saveConfig(token, owner, repo, branch);
+                
+                // 测试连接
+                await window.githubManager.testConnection();
+                
+                showMessage('配置保存成功！', 'success');
+                loadCurrentConfig();
+                
+                // 3秒后返回主页
+                setTimeout(() => {
+                    goBack();
+                }, 2000);
+                
+            } catch (error) {
+                showMessage(`保存失败: ${error.message}`, 'error');
+            }
+        });
+
+        // 显示消息
+        function showMessage(message, type) {
+            const messageDiv = document.getElementById('statusMessage');
+            messageDiv.textContent = message;
+            messageDiv.className = `status-message status-${type}`;
+            messageDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        // 返回主页
+        function goBack() {
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>

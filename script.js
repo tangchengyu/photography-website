@@ -42,6 +42,14 @@ function showLoginModal() {
     document.getElementById('guestBtn').addEventListener('click', handleGuestLogin);
     document.getElementById('logoutBtn').addEventListener('click', handleLogout);
     
+    // 绑定GitHub配置按钮事件
+    const githubConfigBtn = document.getElementById('githubConfigBtn');
+    if (githubConfigBtn) {
+        githubConfigBtn.addEventListener('click', function() {
+            window.open('github-config.html', '_blank');
+        });
+    }
+    
     // 回车键登录
     document.getElementById('adminPassword').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
@@ -150,14 +158,31 @@ async function saveData(dataType, data) {
 // 加载所有数据
 async function loadAllData() {
     try {
-        // 如果数据管理器可用，从云端加载数据
-        if (window.dataManager && await window.dataManager.isCloudStorageAvailable()) {
-            console.log('从云端加载数据...');
-            photos = await window.dataManager.getPhotos();
-            notes = await window.dataManager.getNotes();
-            customCategories = await window.dataManager.getCategories();
-            folders = await window.dataManager.getFolders();
-            aboutInfo = await window.dataManager.getAboutInfo();
+        // 如果配置了GitHub，尝试从云端加载数据
+        if (window.dataManager && window.dataManager.isGitHubConfigured()) {
+            console.log('从GitHub云端加载数据...');
+            try {
+                // 尝试从GitHub加载图片数据
+                const cloudPhotos = await window.dataManager.loadDataFromGitHub('photos.json');
+                if (cloudPhotos && Array.isArray(cloudPhotos)) {
+                    photos = cloudPhotos;
+                    console.log('成功从GitHub加载图片数据');
+                } else {
+                    throw new Error('GitHub数据格式错误');
+                }
+            } catch (error) {
+                console.warn('从GitHub加载图片数据失败，使用本地数据:', error);
+                photos = JSON.parse(localStorage.getItem('photographyPhotos') || '[]');
+            }
+            
+            // 加载其他数据（暂时从本地加载，后续可扩展到GitHub）
+            notes = JSON.parse(localStorage.getItem('photographyNotes') || '[]');
+            customCategories = JSON.parse(localStorage.getItem('customCategories') || '[]');
+            folders = JSON.parse(localStorage.getItem('photographyFolders') || '[]');
+            const savedAboutInfo = localStorage.getItem('aboutInfo');
+            if (savedAboutInfo) {
+                aboutInfo = { ...aboutInfo, ...JSON.parse(savedAboutInfo) };
+            }
         } else {
             // 从localStorage加载数据
             console.log('从本地存储加载数据...');
@@ -187,10 +212,136 @@ async function loadAllData() {
     }
 }
 
+// 检查GitHub配置状态
+function checkGitHubConfigStatus() {
+    if (!window.githubManager) {
+        console.warn('GitHub管理器未初始化');
+        return;
+    }
+    
+    if (!window.githubManager.isConfigured()) {
+        // 显示GitHub配置提示
+        showGitHubConfigNotification();
+    } else {
+        console.log('GitHub已配置，支持云端同步');
+    }
+}
+
+// 显示GitHub配置通知
+function showGitHubConfigNotification() {
+    // 创建通知元素
+    const notification = document.createElement('div');
+    notification.id = 'githubConfigNotification';
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 16px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 1000;
+        max-width: 350px;
+        font-size: 14px;
+        line-height: 1.5;
+        animation: slideInRight 0.3s ease-out;
+    `;
+    
+    notification.innerHTML = `
+        <div style="display: flex; align-items: flex-start; gap: 12px;">
+            <div style="font-size: 20px;">☁️</div>
+            <div style="flex: 1;">
+                <div style="font-weight: bold; margin-bottom: 8px;">启用云端同步</div>
+                <div style="margin-bottom: 12px; opacity: 0.9;">配置GitHub可实现图片云端存储和跨设备同步</div>
+                <div style="display: flex; gap: 8px;">
+                    <button onclick="showGitHubConfigDialog()" style="
+                        background: rgba(255,255,255,0.2);
+                        border: 1px solid rgba(255,255,255,0.3);
+                        color: white;
+                        padding: 6px 12px;
+                        border-radius: 4px;
+                        cursor: pointer;
+                        font-size: 12px;
+                        transition: all 0.2s;
+                    " onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">立即配置</button>
+                    <button onclick="dismissGitHubNotification()" style="
+                        background: transparent;
+                        border: 1px solid rgba(255,255,255,0.3);
+                        color: white;
+                        padding: 6px 12px;
+                        border-radius: 4px;
+                        cursor: pointer;
+                        font-size: 12px;
+                        transition: all 0.2s;
+                    " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">稍后提醒</button>
+                </div>
+            </div>
+            <button onclick="dismissGitHubNotification()" style="
+                background: none;
+                border: none;
+                color: white;
+                cursor: pointer;
+                font-size: 18px;
+                padding: 0;
+                opacity: 0.7;
+                transition: opacity 0.2s;
+            " onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">×</button>
+        </div>
+    `;
+    
+    // 添加动画样式
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    document.body.appendChild(notification);
+    
+    // 10秒后自动隐藏
+    setTimeout(() => {
+        dismissGitHubNotification();
+    }, 10000);
+}
+
+// 关闭GitHub配置通知
+function dismissGitHubNotification() {
+    const notification = document.getElementById('githubConfigNotification');
+    if (notification) {
+        notification.style.animation = 'slideOutRight 0.3s ease-in';
+        setTimeout(() => {
+            notification.remove();
+        }, 300);
+    }
+}
+
 // 初始化应用
 async function initializeApp() {
     // 首先加载所有数据
     await loadAllData();
+    
+    // 检查GitHub配置状态并显示提示
+    checkGitHubConfigStatus();
     
     // 初始化导航
     initializeNavigation();
@@ -1471,11 +1622,31 @@ function addWatermarkToImage(imageSrc, callback) {
     img.src = imageSrc;
 }
 
+// 显示GitHub配置对话框
+function showGitHubConfigDialog() {
+    // 打开GitHub配置页面
+    window.open('github-config.html', '_blank', 'width=600,height=700,scrollbars=yes,resizable=yes');
+}
+
 // 上传图片
 async function uploadImages() {
     if (!isAdmin) {
         alert('只有管理员可以上传图片');
         return;
+    }
+    
+    // 检查GitHub配置
+    if (!window.githubManager || !window.githubManager.isConfigured()) {
+        const configure = confirm('检测到GitHub配置未完成，是否现在配置？\n配置后可实现真正的云端同步功能。');
+        if (configure) {
+            showGitHubConfigDialog();
+            return; // 打开配置页面后停止上传，用户配置完成后可重新上传
+        } else {
+            const continueLocal = confirm('未配置GitHub，将只能本地保存，其他设备无法看到。\n是否继续？');
+            if (!continueLocal) {
+                return;
+            }
+        }
     }
     
     const files = window.selectedFiles;
@@ -1545,16 +1716,58 @@ async function uploadImages() {
                 // 为图片添加水印
                 addWatermarkToImage(originalUrl, async (watermarkedUrl) => {
                     try {
+                        let originalCloudUrl = originalUrl;
+                        let watermarkedCloudUrl = watermarkedUrl;
+                        let isCloudSynced = false;
+                        
+                        // 如果配置了GitHub，尝试上传到云端
+                        if (window.githubManager && window.githubManager.isConfigured()) {
+                            try {
+                                // 生成文件路径
+                                const timestamp = Date.now();
+                                const originalFileName = `original_${timestamp}_${index}_${file.name}`;
+                                const watermarkedFileName = `watermarked_${timestamp}_${index}_${file.name}`;
+                                const categoryPath = getCategoryDisplayName(finalCategory).replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_');
+                                const folderPath = selectedFolder ? selectedFolder.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_') : 'default';
+                                
+                                const originalPath = `images/${categoryPath}/${folderPath}/original/${originalFileName}`;
+                                const watermarkedPath = `images/${categoryPath}/${folderPath}/watermarked/${watermarkedFileName}`;
+                                
+                                // 上传原始图片
+                                const originalUploadResult = await dataManager.uploadImageToGitHub(file, originalPath);
+                                if (originalUploadResult.success) {
+                                    originalCloudUrl = originalUploadResult.url;
+                                }
+                                
+                                // 将水印图片转换为文件并上传
+                                const watermarkedBlob = await fetch(watermarkedUrl).then(r => r.blob());
+                                const watermarkedFile = new File([watermarkedBlob], watermarkedFileName, { type: 'image/jpeg' });
+                                const watermarkedUploadResult = await dataManager.uploadImageToGitHub(watermarkedFile, watermarkedPath);
+                                if (watermarkedUploadResult.success) {
+                                    watermarkedCloudUrl = watermarkedUploadResult.url;
+                                }
+                                
+                                isCloudSynced = originalUploadResult.success && watermarkedUploadResult.success;
+                                if (isCloudSynced) {
+                                    console.log('图片已成功上传到GitHub云端');
+                                }
+                            } catch (error) {
+                                console.error('GitHub上传失败，使用本地存储:', error);
+                                // 继续使用本地URL
+                            }
+                        }
+                        
                         const photo = {
                             id: 'photo_' + Date.now() + '_' + index,
                             title: files.length > 1 ? `${title} (${index + 1})` : title,
                             description: description,
                             category: finalCategory,
                             folder: selectedFolder || '', // 添加文件夹信息
-                            originalUrl: originalUrl, // 存储原始图片（管理员查看）
-                            watermarkedUrl: watermarkedUrl, // 存储水印图片（游客查看）
+                            originalUrl: originalCloudUrl, // 存储原始图片URL（优先云端）
+                            watermarkedUrl: watermarkedCloudUrl, // 存储水印图片URL（优先云端）
                             uploadDate: new Date().toISOString(),
-                            fileName: file.name
+                            fileName: file.name,
+                            isCloudSynced: isCloudSynced // 标记是否已云端同步
                         };
                         
                         photos.unshift(photo); // 添加到数组开头
@@ -1603,6 +1816,16 @@ async function uploadImages() {
 async function completeUpload() {
     // 保存到本地存储
     await saveData('photographyPhotos', photos);
+    
+    // 如果配置了GitHub，同步数据到云端
+    if (window.githubManager && window.githubManager.isConfigured()) {
+        try {
+            await window.dataManager.saveFileToGitHub('data/photos.json', photos);
+            console.log('图片数据已同步到GitHub云端');
+        } catch (error) {
+            console.error('同步数据到GitHub失败:', error);
+        }
+    }
     
     // 重新渲染图片展示
     renderGallery();
