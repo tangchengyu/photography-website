@@ -57,6 +57,11 @@ class DataManager {
         return true;
     }
     
+    // 检查云端存储是否可用
+    async isCloudStorageAvailable() {
+        return this.useCloudStorage;
+    }
+    
     // 从GitHub获取文件内容
     async getFileFromGitHub(filename) {
         const url = `https://api.github.com/repos/${this.githubConfig.owner}/${this.githubConfig.repo}/contents/${this.githubConfig.dataPath}/${filename}`;

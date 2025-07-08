@@ -1497,29 +1497,60 @@ async function uploadImages() {
         reader.onload = function(e) {
             const originalUrl = e.target.result;
             
-            // 为图片添加水印
-            addWatermarkToImage(originalUrl, async (watermarkedUrl) => {
-                const photo = {
-                    id: 'photo_' + Date.now() + '_' + index,
-                    title: files.length > 1 ? `${title} (${index + 1})` : title,
-                    description: description,
-                    category: finalCategory,
-                    folder: selectedFolder || '', // 添加文件夹信息
-                    originalUrl: originalUrl, // 存储原始图片（管理员查看）
-                    watermarkedUrl: watermarkedUrl, // 存储水印图片（游客查看）
-                    uploadDate: new Date().toISOString(),
-                    fileName: file.name
-                };
-                
-                photos.unshift(photo); // 添加到数组开头
+            try {
+                // 为图片添加水印
+                addWatermarkToImage(originalUrl, async (watermarkedUrl) => {
+                    try {
+                        const photo = {
+                            id: 'photo_' + Date.now() + '_' + index,
+                            title: files.length > 1 ? `${title} (${index + 1})` : title,
+                            description: description,
+                            category: finalCategory,
+                            folder: selectedFolder || '', // 添加文件夹信息
+                            originalUrl: originalUrl, // 存储原始图片（管理员查看）
+                            watermarkedUrl: watermarkedUrl, // 存储水印图片（游客查看）
+                            uploadDate: new Date().toISOString(),
+                            fileName: file.name
+                        };
+                        
+                        photos.unshift(photo); // 添加到数组开头
+                        processedCount++;
+                        
+                        // 如果是最后一个文件，完成上传
+                        if (processedCount === files.length) {
+                            await completeUpload();
+                        }
+                    } catch (error) {
+                        console.error('处理图片数据时出错:', error);
+                        processedCount++;
+                        
+                        // 即使出错也要检查是否完成
+                        if (processedCount === files.length) {
+                            await completeUpload();
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('添加水印时出错:', error);
                 processedCount++;
                 
-                // 如果是最后一个文件，完成上传
+                // 即使出错也要检查是否完成
                 if (processedCount === files.length) {
-                    await completeUpload();
+                    completeUpload();
                 }
-            });
+            }
         };
+        
+        reader.onerror = function(error) {
+            console.error('读取文件时出错:', error);
+            processedCount++;
+            
+            // 即使出错也要检查是否完成
+            if (processedCount === files.length) {
+                completeUpload();
+            }
+        };
+        
         reader.readAsDataURL(file);
     });
 }
