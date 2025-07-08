@@ -1824,7 +1824,10 @@ async function uploadImages() {
                 
                 // 即使出错也要检查是否完成
                 if (processedCount === files.length) {
-                    await completeUpload();
+                    completeUpload().catch(err => {
+                        console.error('完成上传时出错:', err);
+                        showErrorMessage('上传过程中出现错误，请重试');
+                    });
                 }
             }
         };
