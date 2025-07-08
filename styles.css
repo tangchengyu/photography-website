@@ -172,6 +172,7 @@ body {
     box-shadow: 0 5px 15px rgba(253, 203, 110, 0.4);
 }
 
+.nav-btn,
 .logout-btn {
     background: linear-gradient(45deg, #fd79a8, #e84393);
     color: white;
@@ -185,9 +186,18 @@ body {
     margin-left: 15px;
 }
 
+.nav-btn {
+    background: linear-gradient(45deg, #74b9ff, #0984e3);
+}
+
+.nav-btn:hover,
 .logout-btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(232, 67, 147, 0.3);
+}
+
+.nav-btn:hover {
+    box-shadow: 0 5px 15px rgba(116, 185, 255, 0.3);
 }
 
 .user-status {

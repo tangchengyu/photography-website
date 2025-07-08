@@ -3,21 +3,13 @@
 
 class DataManager {
     constructor() {
-        // GitHub配置
-        this.githubConfig = {
-            owner: 'tangchengyu',
-            repo: 'guozi',
-            branch: 'main',
-            dataPath: 'data' // 数据存储路径
-        };
-        
         // 数据文件配置
         this.dataFiles = {
-            photos: 'photos.json',
-            notes: 'notes.json',
-            categories: 'categories.json',
-            folders: 'folders.json',
-            about: 'about.json'
+            photos: 'data/photos.json',
+            notes: 'data/notes.json',
+            categories: 'data/categories.json',
+            folders: 'data/folders.json',
+            about: 'data/about.json'
         };
         
         // 缓存数据
@@ -29,74 +21,138 @@ class DataManager {
             about: null
         };
         
-        // 是否使用云端存储（如果GitHub API不可用则回退到localStorage）
-        this.useCloudStorage = true;
-        
         // 初始化
         this.init();
     }
     
     async init() {
-        try {
-            // 尝试连接GitHub API
-            await this.testGitHubConnection();
-            console.log('GitHub云端存储已连接');
-        } catch (error) {
-            console.warn('GitHub云端存储不可用，使用本地存储:', error.message);
-            this.useCloudStorage = false;
+        // 等待GitHub管理器初始化
+        if (window.githubManager) {
+            console.log('数据管理器已初始化');
+        } else {
+            console.warn('GitHub管理器未找到，仅支持本地存储');
         }
     }
     
-    // 测试GitHub连接
-    async testGitHubConnection() {
-        const url = `https://api.github.com/repos/${this.githubConfig.owner}/${this.githubConfig.repo}`;
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error(`GitHub API连接失败: ${response.status}`);
-        }
-        return true;
+    // 获取GitHub管理器
+    getGitHubManager() {
+        return window.githubManager;
+    }
+    
+    // 检查GitHub是否已配置
+    isGitHubConfigured() {
+        const manager = this.getGitHubManager();
+        return manager && manager.isConfigured();
     }
     
     // 检查云端存储是否可用
     async isCloudStorageAvailable() {
-        return this.useCloudStorage;
+        return this.isGitHubConfigured();
     }
     
     // 从GitHub获取文件内容
     async getFileFromGitHub(filename) {
-        const url = `https://api.github.com/repos/${this.githubConfig.owner}/${this.githubConfig.repo}/contents/${this.githubConfig.dataPath}/${filename}`;
+        const manager = this.getGitHubManager();
+        if (!manager || !manager.isConfigured()) {
+            return null;
+        }
         
         try {
-            const response = await fetch(url);
-            if (response.status === 404) {
-                // 文件不存在，返回空数据
+            const fileData = await manager.getFile(filename);
+            if (!fileData) {
                 return null;
             }
             
-            if (!response.ok) {
-                throw new Error(`获取文件失败: ${response.status}`);
-            }
-            
-            const data = await response.json();
-            // 解码base64内容
-            const content = atob(data.content.replace(/\n/g, ''));
-            return JSON.parse(content);
+            return JSON.parse(fileData.content);
         } catch (error) {
             console.error(`从GitHub获取${filename}失败:`, error);
             return null;
         }
     }
     
-    // 保存文件到GitHub（只读模式，实际部署时需要GitHub token）
-    async saveFileToGitHub(filename, data) {
-        // 注意：这个方法需要GitHub Personal Access Token
-        // 在实际部署时，建议使用GitHub Actions或其他CI/CD工具来处理数据更新
-        console.log(`准备保存${filename}到GitHub:`, data);
-        
-        // 由于没有写权限，这里只是模拟保存
-        // 实际实现需要管理员通过其他方式（如GitHub Actions）来更新数据
-        return true;
+    // 直接从GitHub加载数据（用于外部调用）
+    async loadDataFromGitHub(filename) {
+        return await this.getFileFromGitHub(filename);
     }
+    
+    // 保存文件到GitHub
+    async saveFileToGitHub(filename, data) {
+        const manager = this.getGitHubManager();
+        if (!manager || !manager.isConfigured()) {
+            console.warn('GitHub未配置，无法保存到云端');
+            return false;
+        }
+        
+        try {
+            // 获取现有文件的SHA（如果存在）
+            const existingFile = await manager.getFile(filename);
+            const sha = existingFile ? existingFile.sha : null;
+            
+            // 保存文件
+            const content = JSON.stringify(data, null, 2);
+            const message = `更新${filename} - ${new Date().toLocaleString()}`;
+            
+            await manager.createOrUpdateFile(filename, content, message, sha);
+            
+            console.log(`${filename}已成功保存到GitHub`);
+            return true;
+            
+        } catch (error) {
+            console.error(`保存${filename}到GitHub失败:`, error);
+            return false;
+        }
+    }
+    
+    // 上传图片文件到GitHub
+    async uploadImageToGitHub(file, path) {
+        const manager = this.getGitHubManager();
+        if (!manager || !manager.isConfigured()) {
+            throw new Error('GitHub未配置，无法上传图片');
+        }
+        
+        try {
+            // 将文件转换为base64
+            const base64Content = await this.fileToBase64(file);
+            
+            // 检查文件是否已存在
+            const existingFile = await manager.getFile(path);
+            const sha = existingFile ? existingFile.sha : null;
+            
+            // 上传文件到GitHub
+            const message = `上传图片: ${file.name} - ${new Date().toLocaleString()}`;
+            const result = await manager.createOrUpdateFile(path, base64Content, message, sha);
+            
+            // 返回GitHub Pages的访问URL
+            const githubPagesUrl = manager.getGitHubPagesUrl() + '/' + path;
+            
+            return {
+                success: true,
+                url: githubPagesUrl,
+                downloadUrl: result.content?.download_url
+            };
+            
+        } catch (error) {
+            console.error('上传图片到GitHub失败:', error);
+            throw error;
+        }
+    }
+
+    
+    // 将文件转换为base64
+    fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+                // 移除data:image/...;base64,前缀
+                const base64 = reader.result.split(',')[1];
+                resolve(base64);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+    
+
     
     // 获取照片数据
     async getPhotos() {
