@@ -285,13 +285,23 @@ function initializeFolders() {
 // 更新文件夹选择下拉框
 function updateFolderSelect() {
     const folderSelect = document.getElementById('folderSelect');
+    if (!folderSelect) return;
+    
     const currentCategory = getCurrentActiveCategory();
     
     // 清空现有选项（保留默认选项）
     folderSelect.innerHTML = '<option value="">默认文件夹</option>';
     
     // 添加当前分类下的文件夹
-    const categoryFolders = folders.filter(folder => folder.category === currentCategory);
+    let categoryFolders;
+    if (currentCategory === 'all') {
+        // 如果是"所有分类"，显示所有文件夹
+        categoryFolders = folders;
+    } else {
+        // 否则只显示当前分类下的文件夹
+        categoryFolders = folders.filter(folder => folder.category === currentCategory);
+    }
+    
     categoryFolders.forEach(folder => {
         const option = document.createElement('option');
         option.value = folder.id;
@@ -307,13 +317,22 @@ function updateFolderSelect() {
 function updateFolderFilterSelect() {
     const folderFilterSelect = document.getElementById('folderFilterSelect');
     const folderFilter = document.getElementById('folderFilter');
+    if (!folderFilterSelect || !folderFilter) return;
+    
     const currentCategory = getCurrentActiveCategory();
     
     // 清空现有选项（保留默认选项）
     folderFilterSelect.innerHTML = '<option value="">所有文件夹</option>';
     
     // 获取当前分类下的文件夹
-    const categoryFolders = folders.filter(folder => folder.category === currentCategory);
+    let categoryFolders;
+    if (currentCategory === 'all') {
+        // 如果是"所有分类"，显示所有文件夹
+        categoryFolders = folders;
+    } else {
+        // 否则只显示当前分类下的文件夹
+        categoryFolders = folders.filter(folder => folder.category === currentCategory);
+    }
     
     if (categoryFolders.length > 0) {
         // 有文件夹时显示筛选器
@@ -828,8 +847,8 @@ function initializeGallery() {
             // 渲染视图
             renderGallery();
             
-            // 更新文件夹筛选器
-            updateFolderFilterSelect();
+            // 更新文件夹选择下拉框（上传页面）
+            updateFolderSelect();
             
             // 重置文件夹筛选
             const folderFilterSelect = document.getElementById('folderFilterSelect');
@@ -1166,16 +1185,31 @@ function updateCategoryButtons() {
                 document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
                 this.classList.add('active');
                 
-                // 筛选图片
+                // 更新当前分类
                 const categoryId = this.getAttribute('data-category');
-                filterGallery(categoryId);
+                currentCategory = categoryId;
                 
-                // 更新文件夹筛选器
-                updateFolderFilterSelect();
+                // 重置为文件夹视图
+                currentViewMode = 'folder';
+                currentSelectedFolder = null;
+                
+                // 显示文件夹筛选器
+                const folderFilter = document.getElementById('folderFilter');
+                if (folderFilter) {
+                    folderFilter.style.display = 'block';
+                }
+                
+                // 渲染视图
+                renderGallery();
+                
+                // 更新文件夹选择下拉框（上传页面）
+                updateFolderSelect();
                 
                 // 重置文件夹筛选
                 const folderFilterSelect = document.getElementById('folderFilterSelect');
-                folderFilterSelect.value = '';
+                if (folderFilterSelect) {
+                    folderFilterSelect.value = '';
+                }
             });
             
             buttonContainer.appendChild(button);
