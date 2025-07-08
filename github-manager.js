@@ -72,9 +72,15 @@ class GitHubManager {
         }
 
         try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒超时
+            
             const response = await fetch(`${this.baseUrl}/repos/${this.owner}/${this.repo}`, {
-                headers: this.getHeaders()
+                headers: this.getHeaders(),
+                signal: controller.signal
             });
+            
+            clearTimeout(timeoutId);
 
             if (!response.ok) {
                 if (response.status === 401) {
@@ -92,6 +98,9 @@ class GitHubManager {
                 repoInfo
             };
         } catch (error) {
+            if (error.name === 'AbortError') {
+                throw new Error('连接超时，请检查网络连接');
+            }
             throw new Error(`连接GitHub失败: ${error.message}`);
         }
     }
@@ -103,10 +112,18 @@ class GitHubManager {
         }
 
         try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒超时
+            
             const response = await fetch(
                 `${this.baseUrl}/repos/${this.owner}/${this.repo}/contents/${path}?ref=${this.branch}`,
-                { headers: this.getHeaders() }
+                { 
+                    headers: this.getHeaders(),
+                    signal: controller.signal
+                }
             );
+            
+            clearTimeout(timeoutId);
 
             if (response.status === 404) {
                 return null; // 文件不存在
@@ -148,14 +165,20 @@ class GitHubManager {
                 body.sha = sha;
             }
 
-            const response = await fetch(
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒超时
+            
+            response = await fetch(
                 `${this.baseUrl}/repos/${this.owner}/${this.repo}/contents/${path}`,
                 {
                     method: 'PUT',
                     headers: this.getHeaders(),
-                    body: JSON.stringify(body)
+                    body: JSON.stringify(body),
+                    signal: controller.signal
                 }
             );
+            
+            clearTimeout(timeoutId);
 
             if (!response.ok) {
                 const errorData = await response.json();
@@ -164,6 +187,9 @@ class GitHubManager {
 
             return await response.json();
         } catch (error) {
+            if (error.name === 'AbortError') {
+                throw new Error('上传超时，请检查网络连接');
+            }
             throw new Error(`上传文件失败: ${error.message}`);
         }
     }
@@ -195,7 +221,10 @@ class GitHubManager {
 
             return await response.json();
         } catch (error) {
-            throw new Error(`删除文件失败: ${error.message}`);
+            if (error.name === 'AbortError') {
+                throw new Error('请求超时，请检查网络连接');
+            }
+            throw new Error(`获取文件失败: ${error.message}`);
         }
     }
 
@@ -206,9 +235,15 @@ class GitHubManager {
         }
 
         try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒超时
+            
             const response = await fetch(`${this.baseUrl}/repos/${this.owner}/${this.repo}`, {
-                headers: this.getHeaders()
+                headers: this.getHeaders(),
+                signal: controller.signal
             });
+            
+            clearTimeout(timeoutId);
 
             if (!response.ok) {
                 throw new Error(`获取仓库信息失败: ${response.status}`);

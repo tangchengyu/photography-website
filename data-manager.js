@@ -142,12 +142,34 @@ class DataManager {
     fileToBase64(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
+            
+            // 设置超时处理
+            const timeout = setTimeout(() => {
+                reader.abort();
+                reject(new Error('文件读取超时'));
+            }, 30000); // 30秒超时
+            
             reader.onload = () => {
-                // 移除data:image/...;base64,前缀
-                const base64 = reader.result.split(',')[1];
-                resolve(base64);
+                clearTimeout(timeout);
+                try {
+                    // 移除data:image/...;base64,前缀
+                    const base64 = reader.result.split(',')[1];
+                    resolve(base64);
+                } catch (error) {
+                    reject(new Error('Base64转换失败: ' + error.message));
+                }
             };
-            reader.onerror = reject;
+            
+            reader.onerror = (error) => {
+                clearTimeout(timeout);
+                reject(new Error('文件读取失败: ' + error.message));
+            };
+            
+            reader.onabort = () => {
+                clearTimeout(timeout);
+                reject(new Error('文件读取被中断'));
+            };
+            
             reader.readAsDataURL(file);
         });
     }

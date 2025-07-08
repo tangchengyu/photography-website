@@ -1655,6 +1655,17 @@ async function uploadImages() {
         return;
     }
     
+    // 设置全局上传超时
+    window.uploadTimeout = setTimeout(() => {
+        console.error('上传超时，强制完成');
+        showErrorMessage('上传超时，请检查网络连接后重试');
+        // 重置上传按钮
+        const uploadBtn = document.getElementById('uploadBtn');
+        uploadBtn.innerHTML = '上传作品';
+        uploadBtn.disabled = false;
+        window.uploadTimeout = null;
+    }, 120000); // 2分钟超时
+    
     // 检查GitHub配置
     if (!window.githubManager || !window.githubManager.isConfigured()) {
         const configure = confirm('检测到GitHub配置未完成，是否现在配置？\n配置后可实现真正的云端同步功能。');
@@ -1837,6 +1848,12 @@ async function uploadImages() {
 
 // 完成上传
 async function completeUpload() {
+    // 清除上传超时定时器
+    if (window.uploadTimeout) {
+        clearTimeout(window.uploadTimeout);
+        window.uploadTimeout = null;
+    }
+    
     // 保存到本地存储
     await saveData('photographyPhotos', photos);
     
