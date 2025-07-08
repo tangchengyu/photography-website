@@ -448,6 +448,28 @@ body {
     background: rgba(232, 67, 147, 0.9);
 }
 
+/* 文件夹操作按钮样式 */
+.folder-actions {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.folder-item:hover .folder-actions {
+    opacity: 1;
+}
+
+.delete-folder-btn {
+    background: rgba(253, 121, 168, 0.9);
+}
+
+.delete-folder-btn:hover {
+    background: rgba(232, 67, 147, 0.9);
+}
+
 /* 复选框样式 */
 .checkbox-group {
     margin-top: 15px;
@@ -542,6 +564,122 @@ body {
     font-weight: 500;
 }
 
+/* 文件夹图标样式 */
+.folder-item {
+    background: rgba(255, 255, 255, 0.95);
+    border: 2px solid #ffeaa7;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.folder-item:hover {
+    border-color: #fdcb6e;
+    background: rgba(255, 234, 167, 0.3);
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(253, 203, 110, 0.4);
+}
+
+.folder-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 250px;
+    position: relative;
+    background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+    border-radius: 0;
+}
+
+.folder-icon-bg {
+    font-size: 6rem;
+    color: rgba(255, 255, 255, 0.9);
+    text-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
+.folder-item:hover .folder-icon-bg {
+    transform: scale(1.1);
+    color: white;
+}
+
+.folder-photo-count {
+    position: absolute;
+    bottom: 15px;
+    right: 15px;
+    background: rgba(225, 112, 85, 0.9);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    min-width: 40px;
+    text-align: center;
+}
+
+.folder-item .gallery-item-info {
+    text-align: center;
+    padding: 20px;
+}
+
+.folder-item .gallery-item-title {
+    color: #e17055;
+    font-size: 1.3rem;
+    margin-bottom: 5px;
+}
+
+.folder-item .gallery-item-description {
+    color: #74b9ff;
+    font-weight: 500;
+    opacity: 0.9;
+}
+
+/* 返回按钮样式 */
+.back-to-folders-btn {
+    background: linear-gradient(45deg, #74b9ff, #0984e3);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 25px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin: 20px 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.back-to-folders-btn:hover {
+    background: linear-gradient(45deg, #0984e3, #2d3436);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(116, 185, 255, 0.3);
+}
+
+.back-to-folders-container {
+    grid-column: 1 / -1;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.back-to-folders {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    z-index: 10;
+}
+
+.back-to-folders .back-to-folders-btn {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    margin: 0;
+    opacity: 0.9;
+}
+
+.back-to-folders .back-to-folders-btn:hover {
+    opacity: 1;
+}
+
 /* 上传区域样式 */
 .upload-section {
     background: rgba(255, 255, 255, 0.1);
@@ -589,6 +727,134 @@ body {
     border-color: #fdcb6e;
     box-shadow: 0 0 0 3px rgba(253, 203, 110, 0.2);
 }
+
+.folder-selection {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.folder-selection select {
+    flex: 1;
+}
+
+.new-folder-btn {
+    background: linear-gradient(45deg, #e17055, #fd79a8);
+    color: white;
+    border: none;
+    padding: 12px 16px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: all 0.3s ease;
+}
+
+.new-folder-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(225, 112, 85, 0.3);
+}
+
+.folder-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.create-folder-btn, .cancel-folder-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.create-folder-btn {
+    background: linear-gradient(45deg, #00b894, #00cec9);
+    color: white;
+}
+
+.create-folder-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 184, 148, 0.3);
+}
+
+.cancel-folder-btn {
+    background: linear-gradient(45deg, #636e72, #2d3436);
+    color: white;
+}
+
+.cancel-folder-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(99, 110, 114, 0.3);
+}
+
+.file-count {
+            margin-top: 10px;
+            padding: 8px 12px;
+            background: rgba(0, 184, 148, 0.1);
+            border: 1px solid rgba(0, 184, 148, 0.3);
+            border-radius: 8px;
+            color: #00b894;
+            font-size: 0.9rem;
+            text-align: center;
+            font-weight: 500;
+        }
+        
+        .folder-filter {
+            margin: 15px 0;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .folder-filter-label {
+            font-weight: 600;
+            color: #2d3436;
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+        
+        .folder-filter-select {
+            flex: 1;
+            padding: 8px 12px;
+            border: 2px solid rgba(225, 112, 85, 0.3);
+            border-radius: 8px;
+            background: white;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+        
+        .folder-filter-select:focus {
+            outline: none;
+            border-color: #e17055;
+            box-shadow: 0 0 0 3px rgba(225, 112, 85, 0.1);
+        }
+        
+        .gallery-item-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+        
+        .gallery-item-folder {
+            background: rgba(116, 185, 255, 0.1);
+            color: #74b9ff;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            border: 1px solid rgba(116, 185, 255, 0.3);
+        }
 
 .form-textarea {
     height: 100px;
@@ -841,6 +1107,267 @@ body {
     height: 100%;
     background-color: rgba(0, 0, 0, 0.8);
     backdrop-filter: blur(5px);
+}
+
+/* 新建文件夹模态框样式 */
+.folder-modal-content {
+    background: linear-gradient(135deg, #ffffff, #f8f9fa);
+    margin: 8% auto;
+    padding: 0;
+    border-radius: 24px;
+    width: 90%;
+    max-width: 480px;
+    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    animation: folderModalFadeIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+@keyframes folderModalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.7) translateY(-60px) rotateX(10deg);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0) rotateX(0deg);
+    }
+}
+
+.folder-modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 32px 30px 28px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.folder-modal-header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+    animation: headerShimmer 3s ease-in-out infinite;
+}
+
+@keyframes headerShimmer {
+    0%, 100% { transform: rotate(0deg); }
+    50% { transform: rotate(180deg); }
+}
+
+.folder-modal-header h3 {
+    margin: 0 0 12px 0;
+    font-size: 1.6rem;
+    font-weight: 700;
+    position: relative;
+    z-index: 1;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.folder-modal-header p {
+    margin: 0;
+    opacity: 0.95;
+    font-size: 1rem;
+    position: relative;
+    z-index: 1;
+    font-weight: 400;
+}
+
+.folder-modal-body {
+    padding: 35px 30px;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+}
+
+.folder-modal-body .form-group {
+    margin-bottom: 28px;
+}
+
+.folder-modal-body label {
+    display: block;
+    margin-bottom: 12px;
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 1.05rem;
+    position: relative;
+}
+
+.folder-input {
+    width: 100%;
+    padding: 16px 20px;
+    border: 2px solid #e1e8ed;
+    border-radius: 16px;
+    font-size: 1.05rem;
+    background: #ffffff;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-sizing: border-box;
+    font-family: inherit;
+    color: #2c3e50;
+    position: relative;
+}
+
+.folder-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1), 0 4px 12px rgba(102, 126, 234, 0.15);
+    background: #ffffff;
+    transform: translateY(-1px);
+}
+
+.folder-input::placeholder {
+    color: #a0aec0;
+    transition: all 0.3s ease;
+}
+
+.folder-input:focus::placeholder {
+    color: #cbd5e0;
+    transform: translateX(4px);
+}
+
+.current-category-info {
+    background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+    padding: 18px 22px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border: 1px solid #e2e8f0;
+    position: relative;
+    overflow: hidden;
+}
+
+.current-category-info::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.category-label {
+    font-weight: 600;
+    color: #4a5568;
+    font-size: 0.95rem;
+}
+
+.category-display {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.category-display::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    animation: categoryShine 2s ease-in-out infinite;
+}
+
+@keyframes categoryShine {
+    0% { left: -100%; }
+    50% { left: 100%; }
+    100% { left: 100%; }
+}
+
+.folder-modal-footer {
+    padding: 25px 30px 35px;
+    display: flex;
+    gap: 16px;
+    justify-content: flex-end;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border-top: 1px solid #e2e8f0;
+}
+
+.folder-cancel-btn,
+.folder-create-btn {
+    padding: 14px 28px;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    min-width: 110px;
+    position: relative;
+    overflow: hidden;
+    font-family: inherit;
+}
+
+.folder-cancel-btn {
+    background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+    color: #4a5568;
+    border: 2px solid #e2e8f0;
+}
+
+.folder-cancel-btn:hover {
+    background: linear-gradient(135deg, #edf2f7 0%, #e2e8f0 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-color: #cbd5e0;
+}
+
+.folder-cancel-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.folder-create-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.folder-create-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+.folder-create-btn:hover {
+    background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+}
+
+.folder-create-btn:hover::before {
+    left: 100%;
+}
+
+.folder-create-btn:active {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.folder-create-btn:disabled {
+    background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e0 100%);
+    color: #a0aec0;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.folder-create-btn:disabled::before {
+    display: none;
 }
 
 .modal-content {

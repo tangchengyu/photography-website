@@ -1,9 +1,10 @@
 // 全局变量
 let currentNoteId = null;
-let notes = JSON.parse(localStorage.getItem('photographyNotes')) || [];
-let photos = JSON.parse(localStorage.getItem('photographyPhotos')) || [];
-let customCategories = JSON.parse(localStorage.getItem('customCategories')) || [];
-let aboutInfo = JSON.parse(localStorage.getItem('aboutInfo')) || {
+let notes = [];
+let photos = [];
+let customCategories = [];
+let folders = [];
+let aboutInfo = {
     name: '于果',
     description: `<p>热爱摄影的业余爱好者，擅长捕捉生活中的美好瞬间和自然风光。</p>
 <p>我是于果，一名热爱摄影的艺术爱好者。从2015年开始接触摄影，逐渐爱上了通过镜头记录生活，表达情感的方式。我擅长风景、人像和街拍摄影，尤其喜欢捕捉光影变化带来的奇妙效果。</p>
@@ -16,6 +17,14 @@ let aboutInfo = JSON.parse(localStorage.getItem('aboutInfo')) || {
 };
 let isAdmin = false;
 const ADMIN_PASSWORD = '20231026';
+
+// 数据加载标志
+let dataLoaded = false;
+
+// 视图状态管理
+let currentViewMode = 'folder'; // 'folder' 或 'photo'
+let currentSelectedFolder = null; // 当前选中的文件夹ID
+let currentCategory = 'all'; // 当前选中的分类
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
@@ -105,8 +114,84 @@ function updateUserInterface() {
     renderGallery();
 }
 
+// 统一数据保存函数
+async function saveData(dataType, data) {
+    try {
+        // 保存到本地存储
+        localStorage.setItem(dataType, JSON.stringify(data));
+        
+        // 如果数据管理器可用，同时保存到云端
+        if (window.dataManager && await window.dataManager.isCloudStorageAvailable()) {
+            switch(dataType) {
+                case 'photographyPhotos':
+                    await window.dataManager.savePhotos(data);
+                    break;
+                case 'photographyNotes':
+                    await window.dataManager.saveNotes(data);
+                    break;
+                case 'customCategories':
+                    await window.dataManager.saveCategories(data);
+                    break;
+                case 'photographyFolders':
+                    await window.dataManager.saveFolders(data);
+                    break;
+                case 'aboutInfo':
+                    await window.dataManager.saveAboutInfo(data);
+                    break;
+            }
+            console.log(`${dataType} 已同步到云端`);
+        }
+    } catch (error) {
+        console.error(`保存 ${dataType} 失败:`, error);
+        // 即使云端保存失败，本地存储仍然有效
+    }
+}
+
+// 加载所有数据
+async function loadAllData() {
+    try {
+        // 如果数据管理器可用，从云端加载数据
+        if (window.dataManager && await window.dataManager.isCloudStorageAvailable()) {
+            console.log('从云端加载数据...');
+            photos = await window.dataManager.getPhotos();
+            notes = await window.dataManager.getNotes();
+            customCategories = await window.dataManager.getCategories();
+            folders = await window.dataManager.getFolders();
+            aboutInfo = await window.dataManager.getAboutInfo();
+        } else {
+            // 从localStorage加载数据
+            console.log('从本地存储加载数据...');
+            photos = JSON.parse(localStorage.getItem('photographyPhotos') || '[]');
+            notes = JSON.parse(localStorage.getItem('photographyNotes') || '[]');
+            customCategories = JSON.parse(localStorage.getItem('customCategories') || '[]');
+            folders = JSON.parse(localStorage.getItem('photographyFolders') || '[]');
+            const savedAboutInfo = localStorage.getItem('aboutInfo');
+            if (savedAboutInfo) {
+                aboutInfo = { ...aboutInfo, ...JSON.parse(savedAboutInfo) };
+            }
+        }
+        dataLoaded = true;
+        console.log('数据加载完成');
+    } catch (error) {
+        console.error('数据加载失败:', error);
+        // 如果云端加载失败，尝试从localStorage加载
+        photos = JSON.parse(localStorage.getItem('photographyPhotos') || '[]');
+        notes = JSON.parse(localStorage.getItem('photographyNotes') || '[]');
+        customCategories = JSON.parse(localStorage.getItem('customCategories') || '[]');
+        folders = JSON.parse(localStorage.getItem('photographyFolders') || '[]');
+        const savedAboutInfo = localStorage.getItem('aboutInfo');
+        if (savedAboutInfo) {
+            aboutInfo = { ...aboutInfo, ...JSON.parse(savedAboutInfo) };
+        }
+        dataLoaded = true;
+    }
+}
+
 // 初始化应用
-function initializeApp() {
+async function initializeApp() {
+    // 首先加载所有数据
+    await loadAllData();
+    
     // 初始化导航
     initializeNavigation();
     
@@ -120,7 +205,7 @@ function initializeApp() {
     initializeUpload();
     
     // 初始化记事本
-    initializeNotebook();
+    await initializeNotebook();
     
     // 初始化模态框
     initializeModal();
@@ -128,15 +213,18 @@ function initializeApp() {
     // 初始化图片管理功能
     setupPhotoManagement();
     
+    // 初始化文件夹功能
+    initializeFolders();
+    
     // 初始化关于我模块
     initializeAboutSection();
     
     // 加载示例数据（如果是第一次访问）
     if (photos.length === 0) {
-        loadSampleData();
+        await loadSampleData();
     } else {
         // 升级现有照片数据（添加水印版本）
-        upgradeExistingPhotos();
+        await upgradeExistingPhotos();
     }
 }
 
@@ -158,6 +246,330 @@ function setupPhotoManagement() {
     
     // 删除选中
     document.getElementById('deleteSelectedBtn').addEventListener('click', deleteSelectedPhotos);
+}
+
+// 初始化文件夹功能
+function initializeFolders() {
+    updateFolderSelect();
+    
+    // 新建文件夹按钮
+    document.getElementById('newFolderBtn').addEventListener('click', showNewFolderForm);
+    
+    // 模态框中的创建文件夹按钮
+    document.getElementById('modalCreateBtn').addEventListener('click', createFolder);
+    
+    // 模态框中的取消按钮
+    document.getElementById('modalCancelBtn').addEventListener('click', hideNewFolderForm);
+    
+    // 模态框关闭按钮
+    document.getElementById('closeFolderModal').addEventListener('click', hideNewFolderForm);
+    
+    // 点击模态框外部关闭
+    document.getElementById('newFolderModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            hideNewFolderForm();
+        }
+    });
+    
+    // 回车键创建文件夹
+    document.getElementById('modalFolderName').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            createFolder();
+        }
+    });
+    
+    // 文件夹选择变化
+    document.getElementById('folderSelect').addEventListener('change', updateFolderSelection);
+}
+
+// 更新文件夹选择下拉框
+function updateFolderSelect() {
+    const folderSelect = document.getElementById('folderSelect');
+    const currentCategory = getCurrentActiveCategory();
+    
+    // 清空现有选项（保留默认选项）
+    folderSelect.innerHTML = '<option value="">默认文件夹</option>';
+    
+    // 添加当前分类下的文件夹
+    const categoryFolders = folders.filter(folder => folder.category === currentCategory);
+    categoryFolders.forEach(folder => {
+        const option = document.createElement('option');
+        option.value = folder.id;
+        option.textContent = folder.name;
+        folderSelect.appendChild(option);
+    });
+    
+    // 同时更新文件夹筛选下拉框
+    updateFolderFilterSelect();
+}
+
+// 更新文件夹筛选下拉框
+function updateFolderFilterSelect() {
+    const folderFilterSelect = document.getElementById('folderFilterSelect');
+    const folderFilter = document.getElementById('folderFilter');
+    const currentCategory = getCurrentActiveCategory();
+    
+    // 清空现有选项（保留默认选项）
+    folderFilterSelect.innerHTML = '<option value="">所有文件夹</option>';
+    
+    // 获取当前分类下的文件夹
+    const categoryFolders = folders.filter(folder => folder.category === currentCategory);
+    
+    if (categoryFolders.length > 0) {
+        // 有文件夹时显示筛选器
+        folderFilter.style.display = 'block';
+        
+        categoryFolders.forEach(folder => {
+            const option = document.createElement('option');
+            option.value = folder.id;
+            option.textContent = folder.name;
+            folderFilterSelect.appendChild(option);
+        });
+    } else {
+        // 没有文件夹时隐藏筛选器
+        folderFilter.style.display = 'none';
+    }
+}
+
+// 获取当前激活的分类
+function getCurrentActiveCategory() {
+    const activeBtn = document.querySelector('.filter-btn.active');
+    return activeBtn ? activeBtn.getAttribute('data-category') : 'all';
+}
+
+// 更新模态框中的分类选择器
+function updateModalCategorySelect() {
+    const categorySelect = document.getElementById('modalCategorySelect');
+    if (!categorySelect) return;
+    
+    // 清空现有选项
+    categorySelect.innerHTML = '';
+    
+    // 添加"所有分类"选项
+    const allOption = document.createElement('option');
+    allOption.value = 'all';
+    allOption.textContent = '所有分类';
+    categorySelect.appendChild(allOption);
+    
+    // 添加默认分类
+    const defaultCategories = [
+        { value: 'portrait', name: '人像' },
+        { value: 'nature', name: '自然景观' },
+        { value: 'social', name: '社会景观' },
+        { value: 'love', name: '恋爱空间' }
+    ];
+    
+    defaultCategories.forEach(category => {
+        // 如果不是管理员且是恋爱空间分类，则跳过
+        if (!isAdmin && category.value === 'love') {
+            return;
+        }
+        
+        const option = document.createElement('option');
+        option.value = category.value;
+        option.textContent = category.name;
+        categorySelect.appendChild(option);
+    });
+    
+    // 添加自定义分类
+    customCategories.forEach(category => {
+        // 检查是否应该显示此分类
+        const shouldShow = isAdmin || category.guestVisible !== false;
+        
+        if (shouldShow) {
+            const option = document.createElement('option');
+            option.value = category.id;
+            option.textContent = category.name;
+            categorySelect.appendChild(option);
+        }
+    });
+}
+
+// 显示新建文件夹模态框
+function showNewFolderForm() {
+    console.log('showNewFolderForm function called');
+    const modal = document.getElementById('newFolderModal');
+    const currentCategory = getCurrentActiveCategory();
+    const categorySelect = document.getElementById('modalCategorySelect');
+    const folderNameInput = document.getElementById('modalFolderName');
+    
+    // 更新分类选择器
+    updateModalCategorySelect();
+    categorySelect.value = currentCategory;
+    
+    // 清空输入框
+    folderNameInput.value = '';
+    
+    // 显示模态框
+    modal.style.display = 'block';
+    
+    // 聚焦到输入框
+    setTimeout(() => {
+        folderNameInput.focus();
+    }, 100);
+    
+    // 添加键盘事件监听
+    const handleKeyPress = (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            createFolder();
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            hideNewFolderForm();
+        }
+    };
+    
+    // 移除之前的事件监听器（如果存在）
+    folderNameInput.removeEventListener('keydown', folderNameInput._keyHandler);
+    
+    // 添加新的事件监听器
+    folderNameInput._keyHandler = handleKeyPress;
+    folderNameInput.addEventListener('keydown', handleKeyPress);
+    
+    // 添加实时输入验证
+    const handleInput = (e) => {
+        const value = e.target.value;
+        const createBtn = document.getElementById('modalCreateBtn');
+        
+        // 实时更新按钮状态
+        if (value.trim().length > 0 && value.trim().length <= 20) {
+            createBtn.disabled = false;
+            createBtn.style.opacity = '1';
+        } else {
+            createBtn.disabled = true;
+            createBtn.style.opacity = '0.6';
+        }
+        
+        // 字符计数提示
+        const charCount = value.length;
+        if (charCount > 15) {
+            folderNameInput.style.borderColor = charCount > 20 ? '#e74c3c' : '#f39c12';
+        } else {
+            folderNameInput.style.borderColor = '#e1e8ed';
+        }
+    };
+    
+    // 移除之前的输入事件监听器
+    folderNameInput.removeEventListener('input', folderNameInput._inputHandler);
+    
+    // 添加新的输入事件监听器
+    folderNameInput._inputHandler = handleInput;
+    folderNameInput.addEventListener('input', handleInput);
+}
+
+// 隐藏新建文件夹模态框
+function hideNewFolderForm() {
+    const modal = document.getElementById('newFolderModal');
+    const folderNameInput = document.getElementById('modalFolderName');
+    const createBtn = document.getElementById('modalCreateBtn');
+    
+    // 隐藏模态框
+    modal.style.display = 'none';
+    
+    // 清空输入框
+    folderNameInput.value = '';
+    
+    // 重置输入框样式
+    folderNameInput.style.borderColor = '#e1e8ed';
+    
+    // 重置按钮状态
+    createBtn.disabled = false;
+    createBtn.textContent = '创建文件夹';
+    createBtn.style.opacity = '1';
+    
+    // 清理事件监听器
+    if (folderNameInput._keyHandler) {
+        folderNameInput.removeEventListener('keydown', folderNameInput._keyHandler);
+        folderNameInput._keyHandler = null;
+    }
+    
+    if (folderNameInput._inputHandler) {
+        folderNameInput.removeEventListener('input', folderNameInput._inputHandler);
+        folderNameInput._inputHandler = null;
+    }
+}
+
+// 创建新文件夹
+async function createFolder() {
+    const folderNameInput = document.getElementById('modalFolderName');
+    const folderName = folderNameInput.value.trim();
+    const categorySelect = document.getElementById('modalCategorySelect');
+    const selectedCategory = categorySelect.value;
+    const createBtn = document.getElementById('modalCreateBtn');
+    
+    if (!folderName) {
+        showErrorMessage('请输入文件夹名称');
+        folderNameInput.focus();
+        return;
+    }
+    
+    // 验证文件夹名称长度
+    if (folderName.length > 20) {
+        showErrorMessage('文件夹名称不能超过20个字符');
+        folderNameInput.focus();
+        return;
+    }
+    
+    // 验证文件夹名称格式（不能包含特殊字符）
+    const invalidChars = /[<>:"/\\|?*]/;
+    if (invalidChars.test(folderName)) {
+        showErrorMessage('文件夹名称不能包含特殊字符 < > : " / \\ | ? *');
+        folderNameInput.focus();
+        return;
+    }
+    
+    // 检查同分类下是否已存在同名文件夹
+    const existingFolder = folders.find(folder => 
+        folder.category === selectedCategory && folder.name === folderName
+    );
+    
+    if (existingFolder) {
+        showErrorMessage('该分类下已存在同名文件夹');
+        folderNameInput.focus();
+        folderNameInput.select();
+        return;
+    }
+    
+    // 禁用创建按钮，显示加载状态
+    createBtn.disabled = true;
+    createBtn.textContent = '创建中...';
+    
+    try {
+        // 创建新文件夹
+        const newFolder = {
+            id: 'folder_' + Date.now(),
+            name: folderName,
+            category: selectedCategory,
+            createdAt: new Date().toISOString()
+        };
+        
+        folders.push(newFolder);
+        await saveData('photographyFolders', folders);
+        
+        // 更新UI
+        updateFolderSelect();
+        document.getElementById('folderSelect').value = newFolder.id;
+        hideNewFolderForm();
+        
+        showSuccessMessage(`文件夹 "${folderName}" 创建成功！`);
+        
+        // 添加创建成功的视觉反馈
+        const categoryDisplayName = getCategoryDisplayName(selectedCategory);
+        console.log(`新文件夹已添加到 ${categoryDisplayName} 分类`);
+        
+    } catch (error) {
+        console.error('创建文件夹失败:', error);
+        showErrorMessage('创建文件夹失败，请重试');
+    } finally {
+        // 恢复按钮状态
+        createBtn.disabled = false;
+        createBtn.textContent = '创建文件夹';
+    }
+}
+
+// 更新文件夹选择
+function updateFolderSelection() {
+    // 这里可以添加文件夹选择变化时的逻辑
 }
 
 // 全局变量：选中的图片ID数组
@@ -238,7 +650,7 @@ function updateSelectionUI() {
 }
 
 // 删除选中的图片
-function deleteSelectedPhotos() {
+async function deleteSelectedPhotos() {
     if (selectedPhotos.length === 0) {
         alert('请先选择要删除的图片');
         return;
@@ -246,7 +658,7 @@ function deleteSelectedPhotos() {
     
     if (confirm(`确定要删除选中的 ${selectedPhotos.length} 张图片吗？此操作不可撤销。`)) {
         photos = photos.filter(photo => !selectedPhotos.includes(photo.id));
-        localStorage.setItem('photographyPhotos', JSON.stringify(photos));
+        await saveData('photographyPhotos', photos);
         
         selectedPhotos = [];
         renderGallery();
@@ -256,10 +668,10 @@ function deleteSelectedPhotos() {
 }
 
 // 删除单张图片
-function deletePhoto(photoId) {
+async function deletePhoto(photoId) {
     if (confirm('确定要删除这张图片吗？此操作不可撤销。')) {
         photos = photos.filter(photo => photo.id !== photoId);
-        localStorage.setItem('photographyPhotos', JSON.stringify(photos));
+        await saveData('photographyPhotos', photos);
         
         // 从选中列表中移除
         const index = selectedPhotos.indexOf(photoId);
@@ -270,6 +682,57 @@ function deletePhoto(photoId) {
         renderGallery();
         updateSelectionUI();
         showSuccessMessage('图片已删除');
+    }
+}
+
+// 删除文件夹
+async function deleteFolder(folderId) {
+    if (!isAdmin) {
+        alert('只有管理员可以删除文件夹');
+        return;
+    }
+    
+    // 查找要删除的文件夹
+    const folderToDelete = folders.find(folder => folder.id === folderId);
+    if (!folderToDelete) {
+        showErrorMessage('文件夹不存在');
+        return;
+    }
+    
+    // 检查文件夹中是否有图片
+    const folderPhotos = photos.filter(photo => photo.folder === folderId);
+    
+    let confirmMessage = `确定要删除文件夹"${folderToDelete.name}"吗？此操作不可撤销。`;
+    if (folderPhotos.length > 0) {
+        confirmMessage += `\n\n注意：该文件夹中有 ${folderPhotos.length} 张图片，删除文件夹后这些图片将移动到默认文件夹。`;
+    }
+    
+    if (confirm(confirmMessage)) {
+        try {
+            // 将文件夹中的图片移动到默认文件夹（清空folder字段）
+            photos.forEach(photo => {
+                if (photo.folder === folderId) {
+                    photo.folder = null;
+                }
+            });
+            
+            // 从文件夹数组中删除该文件夹
+            folders = folders.filter(folder => folder.id !== folderId);
+            
+            // 保存数据
+            await saveData('photographyPhotos', photos);
+            await saveData('photographyFolders', folders);
+            
+            // 更新UI
+            updateFolderSelect();
+            renderGallery();
+            
+            showSuccessMessage(`文件夹"${folderToDelete.name}"已删除${folderPhotos.length > 0 ? `，${folderPhotos.length} 张图片已移动到默认文件夹` : ''}`);
+            
+        } catch (error) {
+            console.error('删除文件夹失败:', error);
+            showErrorMessage('删除文件夹失败，请重试');
+        }
     }
 }
 
@@ -286,7 +749,7 @@ function replacePhoto(photoId) {
                 const originalUrl = event.target.result;
                 
                 // 添加水印后替换
-                addWatermarkToImage(originalUrl, (watermarkedUrl) => {
+                addWatermarkToImage(originalUrl, async (watermarkedUrl) => {
                     const photo = photos.find(p => p.id === photoId);
                     if (photo) {
                         // 更新图片数据，保存原始版本和水印版本
@@ -297,7 +760,7 @@ function replacePhoto(photoId) {
                         photo.lastModified = new Date().toISOString();
                         photo.fileName = file.name;
                         
-                        localStorage.setItem('photographyPhotos', JSON.stringify(photos));
+                        await saveData('photographyPhotos', photos);
                         renderGallery();
                         showSuccessMessage('图片已替换');
                     }
@@ -348,17 +811,151 @@ function initializeGallery() {
             document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
             this.classList.add('active');
             
-            // 筛选图片
+            // 更新当前分类
             const category = this.getAttribute('data-category');
-            filterGallery(category);
+            currentCategory = category;
+            
+            // 重置为文件夹视图
+            currentViewMode = 'folder';
+            currentSelectedFolder = null;
+            
+            // 显示文件夹筛选器
+            const folderFilter = document.getElementById('folderFilter');
+            if (folderFilter) {
+                folderFilter.style.display = 'block';
+            }
+            
+            // 渲染视图
+            renderGallery();
+            
+            // 更新文件夹筛选器
+            updateFolderFilterSelect();
+            
+            // 重置文件夹筛选
+            const folderFilterSelect = document.getElementById('folderFilterSelect');
+            if (folderFilterSelect) {
+                folderFilterSelect.value = '';
+            }
         });
     });
+    
+    // 文件夹筛选（这个现在只在文件夹视图中使用，用于快速筛选）
+    const folderFilterSelect = document.getElementById('folderFilterSelect');
+    if (folderFilterSelect) {
+        folderFilterSelect.addEventListener('change', function() {
+            const folderId = this.value;
+            if (folderId) {
+                // 直接打开选中的文件夹
+                openFolder(folderId);
+            } else {
+                // 返回文件夹视图
+                backToFolders();
+            }
+        });
+    }
 }
 
 // 渲染图片展示
 function renderGallery(filteredPhotos = null) {
+    if (currentViewMode === 'folder') {
+        renderFolderView();
+    } else {
+        renderPhotoView(filteredPhotos);
+    }
+}
+
+// 渲染文件夹视图
+function renderFolderView() {
+    const galleryGrid = document.getElementById('galleryGrid');
+    
+    // 获取当前分类下的文件夹
+    let categoryFolders = folders.filter(folder => {
+        if (currentCategory === 'all') {
+            return true;
+        }
+        return folder.category === currentCategory;
+    });
+    
+    // 如果不是管理员，过滤掉恋爱空间分类的文件夹
+    if (!isAdmin) {
+        categoryFolders = categoryFolders.filter(folder => folder.category !== 'love');
+    }
+    
+    // 添加默认文件夹（如果当前分类下有没有指定文件夹的图片）
+    const hasDefaultFolderPhotos = photos.some(photo => {
+        const matchesCategory = currentCategory === 'all' || photo.category === currentCategory;
+        const hasNoFolder = !photo.folder;
+        const isVisible = isAdmin || (photo.category !== 'love' && 
+            (!photo.category.startsWith('custom_') || 
+             customCategories.find(cat => cat.id === photo.category)?.guestVisible !== false));
+        return matchesCategory && hasNoFolder && isVisible;
+    });
+    
+    if (hasDefaultFolderPhotos) {
+        categoryFolders.unshift({
+            id: '',
+            name: '默认文件夹',
+            category: currentCategory,
+            isDefault: true
+        });
+    }
+    
+    if (categoryFolders.length === 0) {
+        galleryGrid.innerHTML = `
+            <div class="empty-state" style="grid-column: 1 / -1;">
+                <div class="empty-state-icon">📁</div>
+                <div class="empty-state-text">该分类下还没有文件夹</div>
+                <div class="empty-state-subtext">上传图片时可以创建新文件夹</div>
+            </div>
+        `;
+        return;
+    }
+    
+    galleryGrid.innerHTML = categoryFolders.map(folder => {
+        // 计算文件夹内的图片数量
+        const photoCount = photos.filter(photo => {
+            const matchesCategory = currentCategory === 'all' || photo.category === currentCategory;
+            const matchesFolder = folder.isDefault ? !photo.folder : photo.folder === folder.id;
+            const isVisible = isAdmin || (photo.category !== 'love' && 
+                (!photo.category.startsWith('custom_') || 
+                 customCategories.find(cat => cat.id === photo.category)?.guestVisible !== false));
+            return matchesCategory && matchesFolder && isVisible;
+        }).length;
+        
+        return `
+            <div class="gallery-item folder-item" data-folder-id="${folder.id}" onclick="openFolder('${folder.id}')">
+                ${isAdmin && !folder.isDefault ? `
+                    <div class="folder-actions">
+                        <button class="action-btn delete-folder-btn" onclick="event.stopPropagation(); deleteFolder('${folder.id}')" title="删除文件夹">🗑️</button>
+                    </div>
+                ` : ''}
+                <div class="folder-icon">
+                    <div class="folder-icon-bg">📁</div>
+                    <div class="folder-photo-count">${photoCount}</div>
+                </div>
+                <div class="gallery-item-info">
+                    <h3 class="gallery-item-title">${folder.name}</h3>
+                    <p class="gallery-item-description">${photoCount} 张图片</p>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// 渲染图片视图
+function renderPhotoView(filteredPhotos = null) {
     const galleryGrid = document.getElementById('galleryGrid');
     let photosToShow = filteredPhotos || photos;
+    
+    // 如果指定了文件夹，只显示该文件夹下的图片
+    if (currentSelectedFolder !== null) {
+        if (currentSelectedFolder === '') {
+            // 默认文件夹
+            photosToShow = photosToShow.filter(photo => !photo.folder);
+        } else {
+            photosToShow = photosToShow.filter(photo => photo.folder === currentSelectedFolder);
+        }
+    }
     
     // 如果不是管理员，过滤掉恋爱空间分类和不可见的自定义分类图片
     if (!isAdmin) {
@@ -378,11 +975,13 @@ function renderGallery(filteredPhotos = null) {
     }
     
     if (photosToShow.length === 0) {
+        const folderName = currentSelectedFolder ? getFolderDisplayName(currentSelectedFolder) || '默认文件夹' : '';
         galleryGrid.innerHTML = `
             <div class="empty-state" style="grid-column: 1 / -1;">
                 <div class="empty-state-icon">📷</div>
-                <div class="empty-state-text">还没有上传任何作品</div>
+                <div class="empty-state-text">${folderName ? `${folderName}中` : ''}还没有上传任何作品</div>
                 <div class="empty-state-subtext">点击上传按钮开始分享你的摄影作品吧！</div>
+                ${currentSelectedFolder !== null ? `<button class="back-to-folders-btn" onclick="backToFolders()">← 返回文件夹视图</button>` : ''}
             </div>
         `;
         return;
@@ -391,6 +990,9 @@ function renderGallery(filteredPhotos = null) {
     galleryGrid.innerHTML = photosToShow.map(photo => {
         // 根据用户身份选择显示的图片版本
         const imageUrl = getImageUrlForUser(photo);
+        
+        // 获取文件夹名称
+        const folderName = getFolderDisplayName(photo.folder);
         
         return `
             <div class="gallery-item" data-photo-id="${photo.id}" onclick="openImageModal('${photo.id}')">
@@ -405,11 +1007,23 @@ function renderGallery(filteredPhotos = null) {
                 <div class="gallery-item-info">
                     <h3 class="gallery-item-title">${photo.title}</h3>
                     <p class="gallery-item-description">${photo.description}</p>
-                    <span class="gallery-item-category">${getCategoryDisplayName(photo.category)}</span>
+                    <div class="gallery-item-meta">
+                        <span class="gallery-item-category">${getCategoryDisplayName(photo.category)}</span>
+                        ${folderName ? `<span class="gallery-item-folder">📁 ${folderName}</span>` : ''}
+                    </div>
                 </div>
+                ${currentSelectedFolder !== null ? `<div class="back-to-folders"><button class="back-to-folders-btn" onclick="backToFolders()">← 返回文件夹</button></div>` : ''}
             </div>
         `;
     }).join('');
+    
+    // 如果是在文件夹视图中，添加返回按钮
+    if (currentSelectedFolder !== null) {
+        const backButton = document.createElement('div');
+        backButton.className = 'back-to-folders-container';
+        backButton.innerHTML = `<button class="back-to-folders-btn" onclick="backToFolders()">← 返回文件夹视图</button>`;
+        galleryGrid.insertBefore(backButton, galleryGrid.firstChild);
+    }
 }
 
 // 根据用户身份获取图片URL
@@ -428,13 +1042,57 @@ function getImageUrlForUser(photo) {
 }
 
 // 筛选图片
-function filterGallery(category) {
-    if (category === 'all') {
-        renderGallery();
-    } else {
-        const filtered = photos.filter(photo => photo.category === category);
-        renderGallery(filtered);
+function filterGallery(category, folderId = null) {
+    let filtered = photos;
+    
+    // 按分类筛选
+    if (category !== 'all') {
+        filtered = filtered.filter(photo => photo.category === category);
     }
+    
+    // 按文件夹筛选
+    if (folderId) {
+        filtered = filtered.filter(photo => photo.folder === folderId);
+    } else if (folderId === '') {
+        // 显示没有文件夹的图片（默认文件夹）
+        filtered = filtered.filter(photo => !photo.folder);
+    }
+    
+    renderGallery(filtered);
+}
+
+// 按文件夹筛选图片
+function filterByFolder(folderId) {
+    const currentCategory = getCurrentActiveCategory();
+    filterGallery(currentCategory, folderId);
+}
+
+// 打开文件夹
+function openFolder(folderId) {
+    currentViewMode = 'photo';
+    currentSelectedFolder = folderId;
+    
+    // 隐藏文件夹筛选器，因为现在在单个文件夹视图中
+    const folderFilter = document.getElementById('folderFilter');
+    if (folderFilter) {
+        folderFilter.style.display = 'none';
+    }
+    
+    renderGallery();
+}
+
+// 返回文件夹视图
+function backToFolders() {
+    currentViewMode = 'folder';
+    currentSelectedFolder = null;
+    
+    // 显示文件夹筛选器
+    const folderFilter = document.getElementById('folderFilter');
+    if (folderFilter) {
+        folderFilter.style.display = 'block';
+    }
+    
+    renderGallery();
 }
 
 // 获取分类显示名称
@@ -454,6 +1112,16 @@ function getCategoryDisplayName(category) {
     }
     
     return categoryNames[category] || category;
+}
+
+// 获取文件夹显示名称
+function getFolderDisplayName(folderId) {
+    if (!folderId) {
+        return null; // 默认文件夹不显示名称
+    }
+    
+    const folder = folders.find(f => f.id === folderId);
+    return folder ? folder.name : null;
 }
 
 // 更新分类按钮
@@ -501,6 +1169,13 @@ function updateCategoryButtons() {
                 // 筛选图片
                 const categoryId = this.getAttribute('data-category');
                 filterGallery(categoryId);
+                
+                // 更新文件夹筛选器
+                updateFolderFilterSelect();
+                
+                // 重置文件夹筛选
+                const folderFilterSelect = document.getElementById('folderFilterSelect');
+                folderFilterSelect.value = '';
             });
             
             buttonContainer.appendChild(button);
@@ -536,7 +1211,10 @@ function updateCategoryButtons() {
                 deleteBtn.addEventListener('click', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
-                    deleteCustomCategory(category.id);
+                    deleteCustomCategory(category.id).catch(error => {
+                        console.error('删除分类时出错:', error);
+                        showErrorMessage('删除分类失败，请重试');
+                    });
                 });
                 
                 // 鼠标悬停效果
@@ -559,7 +1237,7 @@ function updateCategoryButtons() {
 }
 
 // 删除自定义分类
-function deleteCustomCategory(categoryId) {
+async function deleteCustomCategory(categoryId) {
     // 确认删除
     const categoryToDelete = customCategories.find(cat => cat.id === categoryId);
     if (!categoryToDelete) {
@@ -585,9 +1263,9 @@ function deleteCustomCategory(categoryId) {
         customCategories.splice(categoryIndex, 1);
     }
     
-    // 保存到本地存储
-    localStorage.setItem('photographyPhotos', JSON.stringify(photos));
-    localStorage.setItem('customCategories', JSON.stringify(customCategories));
+    // 保存到云端
+    await saveData('photographyPhotos', photos);
+    await saveData('customCategories', customCategories);
     
     // 更新界面
     updateCategoryButtons();
@@ -639,6 +1317,8 @@ function initializeUpload() {
         } else {
             customCategoryGroup.style.display = 'none';
         }
+        // 更新文件夹选项
+        updateFolderSelect();
     });
     
     // 上传按钮
@@ -648,7 +1328,24 @@ function initializeUpload() {
 // 处理文件上传
 function handleFileUpload(files) {
     const uploadArea = document.getElementById('uploadArea');
+    const fileCountDiv = document.getElementById('fileCount');
     const fileCount = files.length;
+    
+    // 检查文件数量限制
+    if (fileCount > 10) {
+        alert('最多只能同时上传10张图片，请重新选择');
+        return;
+    }
+    
+    // 检查文件类型
+    const validFiles = Array.from(files).filter(file => {
+        return file.type.startsWith('image/');
+    });
+    
+    if (validFiles.length !== fileCount) {
+        alert('只能上传图片文件，请重新选择');
+        return;
+    }
     
     if (fileCount > 0) {
         uploadArea.innerHTML = `
@@ -657,10 +1354,14 @@ function handleFileUpload(files) {
                 <p>已选择 ${fileCount} 个文件</p>
             </div>
         `;
+        
+        // 显示文件计数
+        fileCountDiv.style.display = 'block';
+        fileCountDiv.textContent = `已选择 ${fileCount} 张图片 ${fileCount > 1 ? '(批量上传)' : ''}`;
     }
     
     // 存储文件到全局变量
-    window.selectedFiles = files;
+    window.selectedFiles = validFiles;
 }
 
 // 添加水印到图片
@@ -727,7 +1428,7 @@ function addWatermarkToImage(imageSrc, callback) {
 }
 
 // 上传图片
-function uploadImages() {
+async function uploadImages() {
     if (!isAdmin) {
         alert('只有管理员可以上传图片');
         return;
@@ -744,6 +1445,7 @@ function uploadImages() {
     const category = document.getElementById('imageCategory').value;
     const customCategory = document.getElementById('customCategory').value.trim();
     const guestVisible = document.getElementById('guestVisible') ? document.getElementById('guestVisible').checked : true;
+    const selectedFolder = document.getElementById('folderSelect').value;
     
     if (!title) {
         alert('请输入作品标题！');
@@ -773,7 +1475,7 @@ function uploadImages() {
                 name: customCategory,
                 guestVisible: guestVisible
             });
-            localStorage.setItem('customCategories', JSON.stringify(customCategories));
+            await saveData('customCategories', customCategories);
             
             // 更新分类按钮
             updateCategoryButtons();
@@ -796,12 +1498,13 @@ function uploadImages() {
             const originalUrl = e.target.result;
             
             // 为图片添加水印
-            addWatermarkToImage(originalUrl, (watermarkedUrl) => {
+            addWatermarkToImage(originalUrl, async (watermarkedUrl) => {
                 const photo = {
                     id: 'photo_' + Date.now() + '_' + index,
                     title: files.length > 1 ? `${title} (${index + 1})` : title,
                     description: description,
                     category: finalCategory,
+                    folder: selectedFolder || '', // 添加文件夹信息
                     originalUrl: originalUrl, // 存储原始图片（管理员查看）
                     watermarkedUrl: watermarkedUrl, // 存储水印图片（游客查看）
                     uploadDate: new Date().toISOString(),
@@ -813,7 +1516,7 @@ function uploadImages() {
                 
                 // 如果是最后一个文件，完成上传
                 if (processedCount === files.length) {
-                    completeUpload();
+                    await completeUpload();
                 }
             });
         };
@@ -822,9 +1525,9 @@ function uploadImages() {
 }
 
 // 完成上传
-function completeUpload() {
+async function completeUpload() {
     // 保存到本地存储
-    localStorage.setItem('photographyPhotos', JSON.stringify(photos));
+    await saveData('photographyPhotos', photos);
     
     // 重新渲染图片展示
     renderGallery();
@@ -835,6 +1538,16 @@ function completeUpload() {
     document.getElementById('imageCategory').value = 'portrait';
     document.getElementById('customCategory').value = '';
     document.getElementById('customCategoryGroup').style.display = 'none';
+    document.getElementById('folderSelect').value = '';
+    document.getElementById('newFolderGroup').style.display = 'none';
+    document.getElementById('newFolderName').value = '';
+    
+    // 隐藏文件计数
+    const fileCountDiv = document.getElementById('fileCount');
+    if (fileCountDiv) {
+        fileCountDiv.style.display = 'none';
+        fileCountDiv.textContent = '';
+    }
     
     // 重置上传区域
     const uploadArea = document.getElementById('uploadArea');
@@ -859,7 +1572,7 @@ function completeUpload() {
 }
 
 // 记事本功能
-function initializeNotebook() {
+async function initializeNotebook() {
     renderNotesList();
     
     // 新建记录按钮
@@ -887,7 +1600,7 @@ function initializeNotebook() {
         loadNote(notes[0].id);
     } else {
         // 创建欢迎记录
-        createWelcomeNote();
+        await createWelcomeNote();
     }
 }
 
@@ -916,7 +1629,7 @@ function renderNotesList() {
 }
 
 // 创建新记录
-function createNewNote() {
+async function createNewNote() {
     if (!isAdmin) {
         alert('只有管理员可以使用记事本功能');
         return;
@@ -931,7 +1644,7 @@ function createNewNote() {
     };
     
     notes.unshift(newNote);
-    localStorage.setItem('photographyNotes', JSON.stringify(notes));
+    await saveData('photographyNotes', notes);
     
     loadNote(newNote.id);
     renderNotesList();
@@ -956,7 +1669,7 @@ function loadNote(noteId) {
 }
 
 // 保存当前记录
-function saveCurrentNote() {
+async function saveCurrentNote() {
     if (!isAdmin) {
         alert('只有管理员可以保存记录');
         return;
@@ -971,7 +1684,7 @@ function saveCurrentNote() {
     note.content = document.getElementById('noteContent').value;
     note.lastModified = new Date().toISOString();
     
-    localStorage.setItem('photographyNotes', JSON.stringify(notes));
+    await saveData('photographyNotes', notes);
     
     renderNotesList();
     loadNote(currentNoteId); // 重新加载以更新日期显示
@@ -1004,7 +1717,7 @@ function exportCurrentNote() {
 }
 
 // 删除当前记录
-function deleteCurrentNote() {
+async function deleteCurrentNote() {
     if (!isAdmin) {
         alert('只有管理员可以删除记录');
         return;
@@ -1017,7 +1730,7 @@ function deleteCurrentNote() {
     }
     
     notes = notes.filter(n => n.id !== currentNoteId);
-    localStorage.setItem('photographyNotes', JSON.stringify(notes));
+    await saveData('photographyNotes', notes);
     
     // 加载下一个记录或清空编辑器
     if (notes.length > 0) {
@@ -1061,7 +1774,7 @@ function getContentPreview(content) {
 }
 
 // 创建欢迎记录
-function createWelcomeNote() {
+async function createWelcomeNote() {
     const welcomeNote = {
         id: 'note_welcome',
         title: '欢迎来到我的摄影世界',
@@ -1071,7 +1784,7 @@ function createWelcomeNote() {
     };
     
     notes.push(welcomeNote);
-    localStorage.setItem('photographyNotes', JSON.stringify(notes));
+    await saveData('photographyNotes', notes);
     
     loadNote(welcomeNote.id);
     renderNotesList();
@@ -1280,7 +1993,7 @@ function toggleEditMode() {
 }
 
 // 保存关于我信息
-function saveAboutInfo() {
+async function saveAboutInfo() {
     const nameInput = document.getElementById('editName');
     const descriptionInput = document.getElementById('editDescription');
     
@@ -1293,8 +2006,8 @@ function saveAboutInfo() {
         const paragraphs = descriptionText.split('\n').filter(p => p.trim() !== '');
         aboutInfo.description = paragraphs.map(p => `<p>${p.trim()}</p>`).join('\n');
         
-        // 保存到本地存储
-        localStorage.setItem('aboutInfo', JSON.stringify(aboutInfo));
+        // 保存到本地存储和云端
+        await saveData('aboutInfo', aboutInfo);
         
         // 更新显示
         loadAboutInfo();
@@ -1312,12 +2025,12 @@ function cancelEdit() {
 }
 
 // 保存关于我信息到本地存储
-function saveAboutInfoToStorage() {
-    localStorage.setItem('aboutInfo', JSON.stringify(aboutInfo));
+async function saveAboutInfoToStorage() {
+    await saveData('aboutInfo', aboutInfo);
 }
 
 // 加载示例数据
-function loadSampleData() {
+async function loadSampleData() {
     const samplePhotos = [
         {
             id: 'sample_1',
@@ -1412,12 +2125,12 @@ function loadSampleData() {
     });
     
     photos.push(...samplePhotos);
-    localStorage.setItem('photographyPhotos', JSON.stringify(photos));
+    await saveData('photographyPhotos', photos);
     renderGallery();
 }
 
 // 为现有数据添加水印版本（兼容性处理）
-function upgradeExistingPhotos() {
+async function upgradeExistingPhotos() {
     let needsUpgrade = false;
     
     photos.forEach(photo => {
@@ -1427,9 +2140,9 @@ function upgradeExistingPhotos() {
             photo.originalUrl = photo.url;
             
             // 为现有图片添加水印（异步处理）
-            addWatermarkToImage(photo.url, (watermarkedUrl) => {
+            addWatermarkToImage(photo.url, async (watermarkedUrl) => {
                 photo.watermarkedUrl = watermarkedUrl;
-                localStorage.setItem('photographyPhotos', JSON.stringify(photos));
+                await saveData('photographyPhotos', photos);
             });
             
             needsUpgrade = true;
@@ -1437,8 +2150,16 @@ function upgradeExistingPhotos() {
     });
     
     if (needsUpgrade) {
-        localStorage.setItem('photographyPhotos', JSON.stringify(photos));
+        await saveData('photographyPhotos', photos);
     }
+}
+
+// 为HTML调用创建包装函数
+function handleSaveAboutInfo() {
+    saveAboutInfo().catch(error => {
+        console.error('保存关于信息时出错:', error);
+        showErrorMessage('保存失败，请重试');
+    });
 }
 
 // 导出全局函数供HTML调用
@@ -1447,3 +2168,6 @@ window.loadNote = loadNote;
 window.togglePhotoSelection = togglePhotoSelection;
 window.deletePhoto = deletePhoto;
 window.replacePhoto = replacePhoto;
+window.openFolder = openFolder;
+window.backToFolders = backToFolders;
+window.handleSaveAboutInfo = handleSaveAboutInfo;

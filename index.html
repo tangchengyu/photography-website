@@ -6,6 +6,7 @@
     <title>于果的个人摄影集</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="data-manager.js"></script>
 </head>
 <body>
     <!-- 登录模态框 -->
@@ -58,6 +59,14 @@
                 <button class="filter-btn admin-only" data-category="love" style="display: none;">恋爱空间</button>
                 <button class="filter-btn" data-category="custom">自定义</button>
             </div>
+            
+            <!-- 文件夹筛选 -->
+            <div class="folder-filter" id="folderFilter" style="display: none;">
+                <label class="folder-filter-label">文件夹：</label>
+                <select id="folderFilterSelect" class="folder-filter-select">
+                    <option value="">所有文件夹</option>
+                </select>
+            </div>
 
             <!-- 图片管理工具栏 -->
             <div class="photo-management admin-only" style="display: none;">
@@ -109,6 +118,18 @@
                     </div>
                     
                     <div class="form-group">
+                        <label for="folderSelect">选择文件夹：</label>
+                        <div class="folder-selection">
+                            <select id="folderSelect" class="form-select">
+                                <option value="">默认文件夹</option>
+                            </select>
+                            <button type="button" id="newFolderBtn" class="new-folder-btn">+ 新建文件夹</button>
+                        </div>
+                    </div>
+                    
+
+                    
+                    <div class="form-group">
                         <label for="imageTitle">作品标题：</label>
                         <input type="text" id="imageTitle" class="form-input" placeholder="为你的作品起个名字">
                     </div>
@@ -122,7 +143,9 @@
                         <div class="upload-content">
                             <div class="upload-icon">📷</div>
                             <p>点击或拖拽图片到这里上传</p>
+                            <div class="upload-hint">支持 JPG、PNG、GIF 格式，最多可选择10张图片</div>
                             <input type="file" id="imageInput" accept="image/*" multiple style="display: none;">
+                            <div id="fileCount" class="file-count" style="display: none;"></div>
                         </div>
                     </div>
                     
@@ -227,7 +250,7 @@
                                 <textarea id="editDescription" class="edit-textarea" rows="6"></textarea>
                             </div>
                             <div class="form-actions">
-                                <button class="save-btn" onclick="saveAboutInfo()">保存修改</button>
+                                <button class="save-btn" onclick="handleSaveAboutInfo()">保存修改</button>
                                 <button class="cancel-btn" onclick="cancelEdit()">取消</button>
                             </div>
                         </div>
@@ -254,6 +277,37 @@
             </div>
         </div>
     </footer>
+
+    <!-- 新建文件夹模态框 -->
+    <div class="modal" id="newFolderModal">
+        <div class="modal-content folder-modal-content">
+            <span class="close" id="closeFolderModal">&times;</span>
+            <div class="folder-modal-header">
+                <h3>新建文件夹</h3>
+                <p>为当前分类创建一个新的文件夹</p>
+            </div>
+            <div class="folder-modal-body">
+                <div class="form-group">
+                    <label for="modalFolderName">文件夹名称：</label>
+                    <input type="text" id="modalFolderName" class="folder-input" placeholder="例如：旅行摄影、人像作品、风景系列...">
+                </div>
+                <div class="form-group">
+                    <label for="modalCategorySelect">选择分类：</label>
+                    <select id="modalCategorySelect" class="folder-input">
+                        <option value="all">所有分类</option>
+                        <option value="portrait">人像</option>
+                        <option value="nature">自然景观</option>
+                        <option value="social">社会景观</option>
+                        <option value="love">恋爱空间</option>
+                    </select>
+                </div>
+            </div>
+            <div class="folder-modal-footer">
+                <button class="folder-cancel-btn" id="modalCancelBtn">取消</button>
+                <button class="folder-create-btn" id="modalCreateBtn">创建文件夹</button>
+            </div>
+        </div>
+    </div>
 
     <!-- 图片预览模态框 -->
     <div class="modal" id="imageModal">
