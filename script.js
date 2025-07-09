@@ -681,6 +681,11 @@ function showNewFolderForm() {
     const categorySelect = document.getElementById('modalCategorySelect');
     const folderNameInput = document.getElementById('modalFolderName');
     
+    if (!modal || !categorySelect || !folderNameInput) {
+        console.error('Required modal elements not found');
+        return;
+    }
+    
     // 更新分类选择器
     updateModalCategorySelect();
     categorySelect.value = currentCategory;
@@ -751,6 +756,11 @@ function hideNewFolderForm() {
     const folderNameInput = document.getElementById('modalFolderName');
     const createBtn = document.getElementById('modalCreateBtn');
     
+    if (!modal || !folderNameInput || !createBtn) {
+        console.error('Required modal elements not found');
+        return;
+    }
+    
     // 隐藏模态框
     modal.style.display = 'none';
     
@@ -780,10 +790,16 @@ function hideNewFolderForm() {
 // 创建新文件夹
 async function createFolder() {
     const folderNameInput = document.getElementById('modalFolderName');
-    const folderName = folderNameInput.value.trim();
     const categorySelect = document.getElementById('modalCategorySelect');
-    const selectedCategory = categorySelect.value;
     const createBtn = document.getElementById('modalCreateBtn');
+    
+    if (!folderNameInput || !categorySelect || !createBtn) {
+        console.error('Required form elements not found');
+        return;
+    }
+    
+    const folderName = folderNameInput.value.trim();
+    const selectedCategory = categorySelect.value;
     
     if (!folderName) {
         showErrorMessage('请输入文件夹名称');
@@ -1703,12 +1719,14 @@ function handleFileUpload(files) {
     }
     
     if (fileCount > 0) {
-        uploadArea.innerHTML = `
-            <div class="upload-content">
-                <div class="upload-icon">✅</div>
-                <p>已选择 ${fileCount} 个文件</p>
-            </div>
-        `;
+        if (uploadArea) {
+            uploadArea.innerHTML = `
+                <div class="upload-content">
+                    <div class="upload-icon">✅</div>
+                    <p>已选择 ${fileCount} 个文件</p>
+                </div>
+            `;
+        }
         
         // 显示文件计数
         if (fileCountDiv) {
@@ -1823,8 +1841,10 @@ async function uploadImages() {
         showErrorMessage('上传超时，请检查网络连接后重试');
         // 重置上传按钮
         const uploadBtn = document.getElementById('uploadBtn');
-        uploadBtn.innerHTML = '上传作品';
-        uploadBtn.disabled = false;
+        if (uploadBtn) {
+            uploadBtn.innerHTML = '上传作品';
+            uploadBtn.disabled = false;
+        }
         window.uploadTimeout = null;
     }, 120000); // 2分钟超时
     
@@ -1905,8 +1925,10 @@ async function uploadImages() {
     
     // 显示上传进度
     const uploadBtn = document.getElementById('uploadBtn');
-    uploadBtn.innerHTML = '<span class="loading"></span> 上传中...';
-    uploadBtn.disabled = true;
+    if (uploadBtn) {
+        uploadBtn.innerHTML = '<span class="loading"></span> 上传中...';
+        uploadBtn.disabled = true;
+    }
     
     let processedCount = 0;
     
@@ -1916,7 +1938,9 @@ async function uploadImages() {
         
         try {
             // 更新进度显示
-            uploadBtn.innerHTML = `<span class="loading"></span> 上传中... (${index + 1}/${files.length})`;
+            if (uploadBtn) {
+                uploadBtn.innerHTML = `<span class="loading"></span> 上传中... (${index + 1}/${files.length})`;
+            }
             
             // 读取文件
             const originalUrl = await new Promise((resolve, reject) => {
@@ -2042,11 +2066,15 @@ async function completeUpload() {
         
         // 更新上传按钮状态
         const uploadBtn = document.getElementById('uploadBtn');
-        uploadBtn.innerHTML = '<span class="loading"></span> 保存中...';
+        if (uploadBtn) {
+            uploadBtn.innerHTML = '<span class="loading"></span> 保存中...';
+        }
         
         // 使用DataManager保存数据（包含本地存储和云端同步）
         console.log('保存照片数据...');
-        uploadBtn.innerHTML = '<span class="loading"></span> 保存中...';
+        if (uploadBtn) {
+            uploadBtn.innerHTML = '<span class="loading"></span> 保存中...';
+        }
         
         try {
             // 使用DataManager的savePhotos方法，它会自动处理本地存储和云端同步
@@ -2155,16 +2183,20 @@ async function completeUpload() {
         
         // 重置上传区域
         const uploadArea = document.getElementById('uploadArea');
-        uploadArea.innerHTML = `
-            <div class="upload-content">
-                <div class="upload-icon">📷</div>
-                <p>点击或拖拽图片到这里上传</p>
-            </div>
-        `;
+        if (uploadArea) {
+            uploadArea.innerHTML = `
+                <div class="upload-content">
+                    <div class="upload-icon">📷</div>
+                    <p>点击或拖拽图片到这里上传</p>
+                </div>
+            `;
+        }
         
         // 重置按钮
-        uploadBtn.innerHTML = '上传作品';
-        uploadBtn.disabled = false;
+        if (uploadBtn) {
+            uploadBtn.innerHTML = '上传作品';
+            uploadBtn.disabled = false;
+        }
         
         // 清除选中的文件
         window.selectedFiles = null;
@@ -2180,8 +2212,10 @@ async function completeUpload() {
         
         // 重置上传按钮
         const uploadBtn = document.getElementById('uploadBtn');
-        uploadBtn.innerHTML = '上传作品';
-        uploadBtn.disabled = false;
+        if (uploadBtn) {
+            uploadBtn.innerHTML = '上传作品';
+            uploadBtn.disabled = false;
+        }
         
         // 显示错误消息
         showErrorMessage(`上传完成时出错: ${error.message}`);
@@ -2247,6 +2281,7 @@ async function initializeNotebook() {
 // 渲染记录列表
 function renderNotesList() {
     const notesList = document.getElementById('notesList');
+    if (!notesList) return;
     
     if (notes.length === 0) {
         notesList.innerHTML = `
