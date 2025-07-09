@@ -21,6 +21,63 @@ const ADMIN_PASSWORD = '20231026';
 // 数据加载标志
 let dataLoaded = false;
 
+// 通知函数
+function showNotification(message, type = 'info') {
+    // 创建通知元素
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.textContent = message;
+    
+    // 设置样式
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        border-radius: 8px;
+        color: white;
+        font-weight: 500;
+        z-index: 10000;
+        transform: translateX(100%);
+        transition: transform 0.3s ease;
+        max-width: 300px;
+        word-wrap: break-word;
+    `;
+    
+    // 根据类型设置背景色
+    switch (type) {
+        case 'success':
+            notification.style.background = 'linear-gradient(45deg, #00b894, #00a085)';
+            break;
+        case 'error':
+            notification.style.background = 'linear-gradient(45deg, #e17055, #d63031)';
+            break;
+        case 'warning':
+            notification.style.background = 'linear-gradient(45deg, #fdcb6e, #e17055)';
+            break;
+        default:
+            notification.style.background = 'linear-gradient(45deg, #74b9ff, #0984e3)';
+    }
+    
+    // 添加到页面
+    document.body.appendChild(notification);
+    
+    // 显示动画
+    setTimeout(() => {
+        notification.style.transform = 'translateX(0)';
+    }, 100);
+    
+    // 自动移除
+    setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    }, 3000);
+}
+
 // 视图状态管理
 let currentViewMode = 'folder'; // 'folder' 或 'photo'
 let currentSelectedFolder = null; // 当前选中的文件夹ID
@@ -86,7 +143,7 @@ function handleAdminLogin() {
         loginModal.style.display = 'none';
     }
         updateUserInterface();
-        showSuccessMessage('管理员登录成功！');
+        showNotification('管理员登录成功！', 'success');
     } else {
         errorDiv.style.display = 'block';
         const adminPasswordElement = document.getElementById('adminPassword');
@@ -107,7 +164,7 @@ function handleGuestLogin() {
         loginModal.style.display = 'none';
     }
     updateUserInterface();
-    showSuccessMessage('欢迎以游客身份访问！');
+    showNotification('欢迎以游客身份访问！', 'success');
 }
 
 // 退出登录
@@ -802,14 +859,14 @@ async function createFolder() {
     const selectedCategory = categorySelect.value;
     
     if (!folderName) {
-        showErrorMessage('请输入文件夹名称');
+        showNotification('请输入文件夹名称', 'error');
         folderNameInput.focus();
         return;
     }
     
     // 验证文件夹名称长度
     if (folderName.length > 20) {
-        showErrorMessage('文件夹名称不能超过20个字符');
+        showNotification('文件夹名称不能超过20个字符', 'error');
         folderNameInput.focus();
         return;
     }
@@ -817,7 +874,7 @@ async function createFolder() {
     // 验证文件夹名称格式（不能包含特殊字符）
     const invalidChars = /[<>:"/\\|?*]/;
     if (invalidChars.test(folderName)) {
-        showErrorMessage('文件夹名称不能包含特殊字符 < > : " / \\ | ? *');
+        showNotification('文件夹名称不能包含特殊字符 < > : " / \\ | ? *', 'error');
         folderNameInput.focus();
         return;
     }
@@ -828,7 +885,7 @@ async function createFolder() {
     );
     
     if (existingFolder) {
-        showErrorMessage('该分类下已存在同名文件夹');
+        showNotification('该分类下已存在同名文件夹', 'error');
         folderNameInput.focus();
         folderNameInput.select();
         return;
@@ -858,7 +915,7 @@ async function createFolder() {
         }
         hideNewFolderForm();
         
-        showSuccessMessage(`文件夹 "${folderName}" 创建成功！`);
+        showNotification(`文件夹 "${folderName}" 创建成功！`, 'success');
         
         // 添加创建成功的视觉反馈
         const categoryDisplayName = getCategoryDisplayName(selectedCategory);
@@ -866,7 +923,7 @@ async function createFolder() {
         
     } catch (error) {
         console.error('创建文件夹失败:', error);
-        showErrorMessage('创建文件夹失败，请重试');
+        showNotification('创建文件夹失败，请重试', 'error');
     } finally {
         // 恢复按钮状态
         createBtn.disabled = false;
@@ -899,7 +956,7 @@ function searchPhotos() {
     );
     
     renderGallery(filteredPhotos);
-    showSuccessMessage(`找到 ${filteredPhotos.length} 张相关图片`);
+    showNotification(`找到 ${filteredPhotos.length} 张相关图片`, 'info');
 }
 
 // 清除搜索
@@ -909,7 +966,7 @@ function clearSearch() {
         searchInput.value = '';
     }
     renderGallery();
-    showSuccessMessage('已清除搜索条件');
+    showNotification('已清除搜索条件', 'info');
 }
 
 // 切换图片选择状态
@@ -992,7 +1049,7 @@ async function deleteSelectedPhotos() {
         selectedPhotos = [];
         renderGallery();
         updateSelectionUI();
-        showSuccessMessage('选中的图片已删除');
+        showNotification('选中的图片已删除', 'success');
     }
 }
 
@@ -1027,7 +1084,7 @@ async function deletePhoto(photoId) {
         
         renderGallery();
         updateSelectionUI();
-        showSuccessMessage('图片已删除');
+        showNotification('图片已删除', 'success');
     }
 }
 
@@ -1041,7 +1098,7 @@ async function deleteFolder(folderId) {
     // 查找要删除的文件夹
     const folderToDelete = folders.find(folder => folder.id === folderId);
     if (!folderToDelete) {
-        showErrorMessage('文件夹不存在');
+        showNotification('文件夹不存在', 'error');
         return;
     }
     
@@ -1073,11 +1130,11 @@ async function deleteFolder(folderId) {
             updateFolderSelect();
             renderGallery();
             
-            showSuccessMessage(`文件夹"${folderToDelete.name}"已删除${folderPhotos.length > 0 ? `，${folderPhotos.length} 张图片已移动到默认文件夹` : ''}`);
+            showNotification(`文件夹"${folderToDelete.name}"已删除${folderPhotos.length > 0 ? `，${folderPhotos.length} 张图片已移动到默认文件夹` : ''}`, 'success');
             
         } catch (error) {
             console.error('删除文件夹失败:', error);
-            showErrorMessage('删除文件夹失败，请重试');
+            showNotification('删除文件夹失败，请重试', 'error');
         }
     }
 }
@@ -1108,7 +1165,7 @@ function replacePhoto(photoId) {
                         
                         await saveData('photographyPhotos', photos);
                         renderGallery();
-                        showSuccessMessage('图片已替换');
+                        showNotification('图片已替换', 'success');
                     }
                 });
             };
@@ -1184,6 +1241,44 @@ function initializeGallery() {
             }
         });
     });
+    
+    // 刷新按钮
+    const refreshBtn = document.getElementById('refreshGalleryBtn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', async function() {
+            try {
+                // 显示加载状态
+                this.innerHTML = '🔄 刷新中...';
+                this.disabled = true;
+                
+                // 强制刷新照片数据
+                if (window.dataManager && window.dataManager.forceRefreshData) {
+                    await window.dataManager.forceRefreshData('photos');
+                    photos = await window.dataManager.getPhotos();
+                } else {
+                    // 降级处理：清除缓存并重新加载
+                    if (window.dataManager && window.dataManager.clearCacheByType) {
+                        window.dataManager.clearCacheByType('photos');
+                    }
+                    photos = await window.dataManager.getPhotos();
+                }
+                
+                // 重新渲染画廊
+                renderGallery();
+                
+                // 显示成功提示
+                showNotification('图片数据已刷新', 'success');
+                
+            } catch (error) {
+                console.error('刷新数据失败:', error);
+                showNotification('刷新失败，请稍后重试', 'error');
+            } finally {
+                // 恢复按钮状态
+                this.innerHTML = '🔄 刷新';
+                this.disabled = false;
+            }
+        });
+    }
     
     // 文件夹筛选（这个现在只在文件夹视图中使用，用于快速筛选）
     const folderFilterSelect = document.getElementById('folderFilterSelect');
@@ -1574,7 +1669,7 @@ function updateCategoryButtons() {
                     e.stopPropagation();
                     deleteCustomCategory(category.id).catch(error => {
                         console.error('删除分类时出错:', error);
-                        showErrorMessage('删除分类失败，请重试');
+                        showNotification('删除分类失败，请重试', 'error');
                     });
                 });
                 
@@ -1633,7 +1728,7 @@ async function deleteCustomCategory(categoryId) {
     renderGallery();
     
     // 显示成功消息
-    showSuccessMessage(`分类"${categoryToDelete.name}"已删除`);
+    showNotification(`分类"${categoryToDelete.name}"已删除`, 'success');
 }
 
 // 上传功能
@@ -1838,7 +1933,7 @@ async function uploadImages() {
     // 设置全局上传超时
     window.uploadTimeout = setTimeout(() => {
         console.error('上传超时，强制完成');
-        showErrorMessage('上传超时，请检查网络连接后重试');
+        showNotification('上传超时，请检查网络连接后重试', 'error');
         // 重置上传按钮
         const uploadBtn = document.getElementById('uploadBtn');
         if (uploadBtn) {
@@ -2021,7 +2116,7 @@ async function uploadImages() {
                     }
                 } catch (error) {
                     console.error(`GitHub上传失败 (${index + 1}/${files.length}):`, error);
-                    showErrorMessage(`图片 ${index + 1} 云端上传失败，将保存到本地: ${error.message}`);
+                    showNotification(`图片 ${index + 1} 云端上传失败，将保存到本地: ${error.message}`, 'warning');
                     // 继续使用本地URL
                 }
             }
@@ -2044,7 +2139,7 @@ async function uploadImages() {
             
         } catch (error) {
             console.error(`处理图片 ${index + 1} 时出错:`, error);
-            showErrorMessage(`图片 ${index + 1} 处理失败: ${error.message}`);
+            showNotification(`图片 ${index + 1} 处理失败: ${error.message}`, 'error');
             // 继续处理下一张图片
         }
     }
@@ -2082,62 +2177,97 @@ async function completeUpload() {
             
             if (window.githubManager && window.githubManager.isConfigured()) {
                 console.log('照片数据已保存并同步到云端');
-                showSuccessMessage('作品上传并同步到云端成功！');
+                showNotification('作品上传并同步到云端成功！', 'success');
             } else {
                 console.log('照片数据已保存到本地');
-                showSuccessMessage('作品上传成功！（仅保存到本地）');
+                showNotification('作品上传成功！（仅保存到本地）', 'success');
             }
         } catch (error) {
             console.error('保存照片数据失败:', error);
-            // 降级到直接保存本地存储
-            try {
-                localStorage.setItem('photographyPhotos', JSON.stringify(photos));
-                console.log('已降级保存到本地存储');
-                showErrorMessage(`云端同步失败: ${error.message}，但图片已保存到本地`);
-            } catch (localError) {
-                console.error('本地存储也失败:', localError);
-                showErrorMessage(`保存失败: ${localError.message}`);
-                throw localError;
+            
+            // 检查是否是GitHub Actions部署取消的错误
+            const errorMessage = error.message || '';
+            if (errorMessage.includes('Canceling since a higher priority waiting request for pages exists') ||
+                errorMessage.includes('higher priority waiting request')) {
+                // GitHub Actions部署取消，这是正常现象
+                console.log('GitHub Actions部署被取消（正常现象）');
+                try {
+                    localStorage.setItem('photographyPhotos', JSON.stringify(photos));
+                    showNotification('作品上传成功！GitHub正在部署中，稍后将自动同步', 'success');
+                } catch (localError) {
+                    console.error('本地存储失败:', localError);
+                    showNotification(`本地保存失败: ${localError.message}`, 'error');
+                    throw localError;
+                }
+            } else {
+                // 其他错误，降级到直接保存本地存储
+                try {
+                    localStorage.setItem('photographyPhotos', JSON.stringify(photos));
+                    console.log('已降级保存到本地存储');
+                    showNotification(`云端同步失败: ${error.message}，但图片已保存到本地`, 'warning');
+                } catch (localError) {
+                    console.error('本地存储也失败:', localError);
+                    showNotification(`保存失败: ${localError.message}`, 'error');
+                    throw localError;
+                }
             }
         }
         
-        // 强制清除缓存并重新渲染
-        console.log('重新渲染图片展示...');
+        // 强制刷新数据并重新渲染
+        console.log('强制刷新数据并重新渲染图片展示...');
         
-        // 清除DataManager缓存
-        if (window.dataManager) {
+        // 使用强制刷新机制确保获取最新数据
+        if (window.dataManager && typeof window.dataManager.forceRefreshData === 'function') {
             try {
-                // 使用DataManager的clearCacheByType方法安全清除缓存
-                if (typeof window.dataManager.clearCacheByType === 'function') {
-                    window.dataManager.clearCacheByType('photos');
-                } else if (window.dataManager.cache) {
-                    window.dataManager.cache.photos = null;
-                    if (window.dataManager.cacheTimestamps) {
-                        delete window.dataManager.cacheTimestamps.photos;
-                    }
-                }
-                console.log('已清除DataManager缓存');
-            } catch (cacheError) {
-                console.warn('清除缓存时出错:', cacheError);
-            }
-            
-            // 强制重新加载数据
-            try {
-                const freshPhotos = await window.dataManager.getPhotos();
+                console.log('使用强制刷新机制重新加载数据...');
+                const freshPhotos = await window.dataManager.forceRefreshData('photos');
                 photos = freshPhotos;
-                console.log('已从DataManager重新加载照片数据');
+                console.log(`强制刷新完成，加载了 ${photos.length} 张照片`);
             } catch (error) {
-                console.error('从DataManager重新加载数据失败:', error);
-                // 降级到本地存储
+                console.error('强制刷新数据失败:', error);
+                // 降级到清除缓存后重新加载
+                try {
+                    if (window.dataManager.clearCacheByType) {
+                        window.dataManager.clearCacheByType('photos');
+                    }
+                    const fallbackPhotos = await window.dataManager.getPhotos();
+                    photos = fallbackPhotos;
+                    console.log('降级刷新成功');
+                } catch (fallbackError) {
+                    console.error('降级刷新也失败:', fallbackError);
+                    // 最后降级到本地存储
+                    const savedPhotos = JSON.parse(localStorage.getItem('photographyPhotos') || '[]');
+                    photos = savedPhotos;
+                    console.log('已从本地存储重新加载照片数据');
+                }
+            }
+        } else {
+            // 兼容旧版本的清除缓存方式
+            if (window.dataManager) {
+                try {
+                    if (typeof window.dataManager.clearCacheByType === 'function') {
+                        window.dataManager.clearCacheByType('photos');
+                    } else if (window.dataManager.cache) {
+                        window.dataManager.cache.photos = null;
+                        if (window.dataManager.cacheTimestamps) {
+                            delete window.dataManager.cacheTimestamps.photos;
+                        }
+                    }
+                    const freshPhotos = await window.dataManager.getPhotos();
+                    photos = freshPhotos;
+                    console.log('已重新加载照片数据');
+                } catch (error) {
+                    console.error('重新加载数据失败:', error);
+                    const savedPhotos = JSON.parse(localStorage.getItem('photographyPhotos') || '[]');
+                    photos = savedPhotos;
+                    console.log('已从本地存储重新加载照片数据');
+                }
+            } else {
+                // 直接从本地存储重新加载
                 const savedPhotos = JSON.parse(localStorage.getItem('photographyPhotos') || '[]');
                 photos = savedPhotos;
                 console.log('已从本地存储重新加载照片数据');
             }
-        } else {
-            // 直接从本地存储重新加载
-            const savedPhotos = JSON.parse(localStorage.getItem('photographyPhotos') || '[]');
-            photos = savedPhotos;
-            console.log('已从本地存储重新加载照片数据');
         }
         
         // 重新渲染图片展示
@@ -2218,7 +2348,7 @@ async function completeUpload() {
         }
         
         // 显示错误消息
-        showErrorMessage(`上传完成时出错: ${error.message}`);
+        showNotification(`上传完成时出错: ${error.message}`, 'error');
         
         // 尝试重新渲染以显示可能已保存的图片
         try {
@@ -2381,7 +2511,7 @@ async function saveCurrentNote() {
     renderNotesList();
     loadNote(currentNoteId); // 重新加载以更新日期显示
     
-    showSuccessMessage('记录保存成功！');
+    showNotification('记录保存成功！', 'success');
 }
 
 // 导出当前记录
@@ -2405,7 +2535,7 @@ function exportCurrentNote() {
     
     URL.revokeObjectURL(url);
     
-    showSuccessMessage('记录导出成功！');
+    showNotification('记录导出成功！', 'success');
 }
 
 // 删除当前记录
@@ -2447,7 +2577,7 @@ async function deleteCurrentNote() {
     }
     
     renderNotesList();
-    showSuccessMessage('记录删除成功！');
+    showNotification('记录删除成功！', 'success');
 }
 
 // 更新字数统计
@@ -2583,130 +2713,7 @@ function formatDate(dateString) {
     });
 }
 
-function showSuccessMessage(message) {
-    // 创建消息元素
-    const messageDiv = document.createElement('div');
-    messageDiv.className = 'success-message';
-    if (messageDiv) {
-        messageDiv.textContent = message;
-    }
-    messageDiv.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: linear-gradient(45deg, #00b894, #00cec9);
-        color: white;
-        padding: 15px 25px;
-        border-radius: 10px;
-        box-shadow: 0 5px 15px rgba(0, 184, 148, 0.3);
-        z-index: 1000;
-        animation: slideInRight 0.3s ease-out;
-        font-weight: 500;
-    `;
-    
-    // 添加动画样式
-    if (!document.querySelector('#successMessageStyle')) {
-        const style = document.createElement('style');
-        style.id = 'successMessageStyle';
-        style.textContent = `
-            @keyframes slideInRight {
-                from {
-                    transform: translateX(100%);
-                    opacity: 0;
-                }
-                to {
-                    transform: translateX(0);
-                    opacity: 1;
-                }
-            }
-            @keyframes slideOutRight {
-                from {
-                    transform: translateX(0);
-                    opacity: 1;
-                }
-                to {
-                    transform: translateX(100%);
-                    opacity: 0;
-                }
-            }
-        `;
-        document.head.appendChild(style);
-    }
-    
-    document.body.appendChild(messageDiv);
-    
-    // 3秒后自动移除
-    setTimeout(() => {
-        messageDiv.style.animation = 'slideOutRight 0.3s ease-out';
-        setTimeout(() => {
-            if (messageDiv.parentNode) {
-                messageDiv.parentNode.removeChild(messageDiv);
-            }
-        }, 300);
-    }, 3000);
-}
 
-// 显示错误消息
-function showErrorMessage(message) {
-    // 创建消息元素
-    const messageDiv = document.createElement('div');
-    messageDiv.className = 'error-message';
-    messageDiv.textContent = message;
-    messageDiv.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: linear-gradient(45deg, #e17055, #d63031);
-        color: white;
-        padding: 15px 25px;
-        border-radius: 10px;
-        box-shadow: 0 5px 15px rgba(214, 48, 49, 0.3);
-        z-index: 1000;
-        animation: slideInRight 0.3s ease-out;
-        font-weight: 500;
-    `;
-    
-    // 添加动画样式（如果还没有）
-    if (!document.querySelector('#errorMessageStyle')) {
-        const style = document.createElement('style');
-        style.id = 'errorMessageStyle';
-        style.textContent = `
-            @keyframes slideInRight {
-                from {
-                    transform: translateX(100%);
-                    opacity: 0;
-                }
-                to {
-                    transform: translateX(0);
-                    opacity: 1;
-                }
-            }
-            @keyframes slideOutRight {
-                from {
-                    transform: translateX(0);
-                    opacity: 1;
-                }
-                to {
-                    transform: translateX(100%);
-                    opacity: 0;
-                }
-            }
-        `;
-        document.head.appendChild(style);
-    }
-    
-    document.body.appendChild(messageDiv);
-    
-    // 3秒后自动移除
-    setTimeout(() => {
-        messageDiv.style.animation = 'slideOutRight 0.3s ease-out';
-        setTimeout(() => {
-            if (messageDiv.parentNode) {
-                messageDiv.parentNode.removeChild(messageDiv);
-            }
-        }, 300);
-    }, 3000);
-}
 
 // ==================== 关于我模块功能 ====================
 
@@ -2759,7 +2766,7 @@ function editContact(type) {
         aboutInfo.contacts[type] = newValue.trim();
         saveAboutInfo();
         updateContactInfo();
-        showSuccessMessage(`${labels[type]}已更新！`);
+        showNotification(`${labels[type]}已更新！`, 'success');
     }
 }
 
@@ -2817,7 +2824,7 @@ async function saveAboutInfo() {
         // 隐藏编辑面板
         toggleEditMode();
         
-        showSuccessMessage('个人信息已保存！');
+        showNotification('个人信息已保存！', 'success');
     }
 }
 
@@ -2960,7 +2967,7 @@ async function upgradeExistingPhotos() {
 function handleSaveAboutInfo() {
     saveAboutInfo().catch(error => {
         console.error('保存关于信息时出错:', error);
-        showErrorMessage('保存失败，请重试');
+        showNotification('保存失败，请重试', 'error');
     });
 }
 

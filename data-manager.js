@@ -22,7 +22,7 @@ class DataManager {
         };
         
         // 缓存过期时间（毫秒）
-        this.cacheExpiry = 5 * 60 * 1000; // 5分钟
+        this.cacheExpiry = 30 * 1000; // 30秒，确保能及时获取最新数据
         this.cacheTimestamps = {};
         
         // 初始化
@@ -57,6 +57,31 @@ class DataManager {
             this.cache[type] = null;
             delete this.cacheTimestamps[type];
             console.log(`${type}缓存已清除`);
+        }
+    }
+    
+    // 强制刷新数据（跳过缓存直接从GitHub加载）
+    async forceRefreshData(type) {
+        console.log(`强制刷新${type}数据...`);
+        
+        // 清除缓存
+        this.clearCacheByType(type);
+        
+        // 根据类型调用相应的获取方法
+        switch(type) {
+            case 'photos':
+                return await this.getPhotos();
+            case 'notes':
+                return await this.getNotes();
+            case 'categories':
+                return await this.getCategories();
+            case 'folders':
+                return await this.getFolders();
+            case 'about':
+                return await this.getAboutInfo();
+            default:
+                console.warn(`未知的数据类型: ${type}`);
+                return null;
         }
     }
     
