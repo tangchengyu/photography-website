@@ -38,9 +38,20 @@ function showLoginModal() {
     loginModal.style.display = 'flex';
     
     // 绑定登录事件
-    document.getElementById('loginBtn').addEventListener('click', handleAdminLogin);
-    document.getElementById('guestBtn').addEventListener('click', handleGuestLogin);
-    document.getElementById('logoutBtn').addEventListener('click', handleLogout);
+    const loginBtn = document.getElementById('loginBtn');
+    if (loginBtn) {
+        loginBtn.addEventListener('click', handleAdminLogin);
+    }
+    
+    const guestBtn = document.getElementById('guestBtn');
+    if (guestBtn) {
+        guestBtn.addEventListener('click', handleGuestLogin);
+    }
+    
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', handleLogout);
+    }
     
     // 绑定GitHub配置按钮事件
     const githubConfigBtn = document.getElementById('githubConfigBtn');
@@ -51,26 +62,37 @@ function showLoginModal() {
     }
     
     // 回车键登录
-    document.getElementById('adminPassword').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            handleAdminLogin();
-        }
-    });
+    const adminPassword = document.getElementById('adminPassword');
+    if (adminPassword) {
+        adminPassword.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                handleAdminLogin();
+            }
+        });
+    }
 }
 
 // 管理员登录
 function handleAdminLogin() {
-    const password = document.getElementById('adminPassword').value;
+    const adminPasswordElement = document.getElementById('adminPassword');
+    if (!adminPasswordElement) return;
+    const password = adminPasswordElement.value;
     const errorDiv = document.getElementById('loginError');
     
     if (password === ADMIN_PASSWORD) {
         isAdmin = true;
-        document.getElementById('loginModal').style.display = 'none';
+        const loginModal = document.getElementById('loginModal');
+    if (loginModal) {
+        loginModal.style.display = 'none';
+    }
         updateUserInterface();
         showSuccessMessage('管理员登录成功！');
     } else {
         errorDiv.style.display = 'block';
-        document.getElementById('adminPassword').value = '';
+        const adminPasswordElement = document.getElementById('adminPassword');
+        if (adminPasswordElement) {
+            adminPasswordElement.value = '';
+        }
         setTimeout(() => {
             errorDiv.style.display = 'none';
         }, 3000);
@@ -80,7 +102,10 @@ function handleAdminLogin() {
 // 游客登录
 function handleGuestLogin() {
     isAdmin = false;
-    document.getElementById('loginModal').style.display = 'none';
+    const loginModal = document.getElementById('loginModal');
+    if (loginModal) {
+        loginModal.style.display = 'none';
+    }
     updateUserInterface();
     showSuccessMessage('欢迎以游客身份访问！');
 }
@@ -88,8 +113,14 @@ function handleGuestLogin() {
 // 退出登录
 function handleLogout() {
     isAdmin = false;
-    document.getElementById('loginModal').style.display = 'flex';
-    document.getElementById('adminPassword').value = '';
+    const loginModal = document.getElementById('loginModal');
+    if (loginModal) {
+        loginModal.style.display = 'flex';
+    }
+    const adminPasswordElement = document.getElementById('adminPassword');
+     if (adminPasswordElement) {
+         adminPasswordElement.value = '';
+     }
     updateUserInterface();
 }
 
@@ -112,8 +143,10 @@ function updateUserInterface() {
         }
     });
     
-    userStatus.textContent = isAdmin ? '管理员模式' : '游客模式';
-    userStatus.style.background = isAdmin ? 'rgba(225, 112, 85, 0.2)' : 'rgba(116, 185, 255, 0.2)';
+    if (userStatus) {
+        userStatus.textContent = isAdmin ? '管理员模式' : '游客模式';
+        userStatus.style.background = isAdmin ? 'rgba(225, 112, 85, 0.2)' : 'rgba(116, 185, 255, 0.2)';
+    }
     
     // 更新分类按钮显示
     updateCategoryButtons();
@@ -422,21 +455,35 @@ async function initializeApp() {
 // 设置图片管理功能
 function setupPhotoManagement() {
     // 搜索功能
-    document.getElementById('searchBtn').addEventListener('click', searchPhotos);
-    document.getElementById('searchInput').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            searchPhotos();
-        }
-    });
+    const searchBtn = document.getElementById('searchBtn');
+    if (searchBtn) {
+        searchBtn.addEventListener('click', searchPhotos);
+    }
     
-    // 清除搜索
-    document.getElementById('clearSearchBtn').addEventListener('click', clearSearch);
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchPhotos();
+            }
+        });
+    }
     
-    // 全选功能
-    document.getElementById('selectAllBtn').addEventListener('click', toggleSelectAll);
+    const clearSearchBtn = document.getElementById('clearSearchBtn');
+    if (clearSearchBtn) {
+        clearSearchBtn.addEventListener('click', clearSearch);
+    }
+
+    // 批量操作按钮
+    const selectAllBtn = document.getElementById('selectAllBtn');
+    if (selectAllBtn) {
+        selectAllBtn.addEventListener('click', toggleSelectAll);
+    }
     
-    // 删除选中
-    document.getElementById('deleteSelectedBtn').addEventListener('click', deleteSelectedPhotos);
+    const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+    if (deleteSelectedBtn) {
+        deleteSelectedBtn.addEventListener('click', deleteSelectedPhotos);
+    }
 }
 
 // 初始化文件夹功能
@@ -444,33 +491,54 @@ function initializeFolders() {
     updateFolderSelect();
     
     // 新建文件夹按钮
-    document.getElementById('newFolderBtn').addEventListener('click', showNewFolderForm);
+    const newFolderBtn = document.getElementById('newFolderBtn');
+    if (newFolderBtn) {
+        newFolderBtn.addEventListener('click', showNewFolderForm);
+    }
     
     // 模态框中的创建文件夹按钮
-    document.getElementById('modalCreateBtn').addEventListener('click', createFolder);
+    const modalCreateBtn = document.getElementById('modalCreateBtn');
+    if (modalCreateBtn) {
+        modalCreateBtn.addEventListener('click', createFolder);
+    }
     
     // 模态框中的取消按钮
-    document.getElementById('modalCancelBtn').addEventListener('click', hideNewFolderForm);
+    const modalCancelBtn = document.getElementById('modalCancelBtn');
+    if (modalCancelBtn) {
+        modalCancelBtn.addEventListener('click', hideNewFolderForm);
+    }
     
     // 模态框关闭按钮
-    document.getElementById('closeFolderModal').addEventListener('click', hideNewFolderForm);
+    const closeFolderModal = document.getElementById('closeFolderModal');
+    if (closeFolderModal) {
+        closeFolderModal.addEventListener('click', hideNewFolderForm);
+    }
     
     // 点击模态框外部关闭
-    document.getElementById('newFolderModal').addEventListener('click', function(e) {
-        if (e.target === this) {
-            hideNewFolderForm();
-        }
-    });
+    const newFolderModal = document.getElementById('newFolderModal');
+    if (newFolderModal) {
+        newFolderModal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                hideNewFolderForm();
+            }
+        });
+    }
     
     // 回车键创建文件夹
-    document.getElementById('modalFolderName').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            createFolder();
-        }
-    });
+    const modalFolderName = document.getElementById('modalFolderName');
+    if (modalFolderName) {
+        modalFolderName.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                createFolder();
+            }
+        });
+    }
     
     // 文件夹选择变化
-    document.getElementById('folderSelect').addEventListener('change', updateFolderSelection);
+    const folderSelect = document.getElementById('folderSelect');
+    if (folderSelect) {
+        folderSelect.addEventListener('change', updateFolderSelection);
+    }
 }
 
 // 更新文件夹选择下拉框
@@ -768,7 +836,10 @@ async function createFolder() {
         
         // 更新UI
         updateFolderSelect();
-        document.getElementById('folderSelect').value = newFolder.id;
+        const folderSelect = document.getElementById('folderSelect');
+        if (folderSelect) {
+            folderSelect.value = newFolder.id;
+        }
         hideNewFolderForm();
         
         showSuccessMessage(`文件夹 "${folderName}" 创建成功！`);
@@ -797,7 +868,9 @@ let selectedPhotos = [];
 
 // 搜索图片
 function searchPhotos() {
-    const searchTerm = document.getElementById('searchInput').value.trim().toLowerCase();
+    const searchInput = document.getElementById('searchInput');
+    if (!searchInput) return;
+    const searchTerm = searchInput.value.trim().toLowerCase();
     if (!searchTerm) {
         renderGallery();
         return;
@@ -815,7 +888,10 @@ function searchPhotos() {
 
 // 清除搜索
 function clearSearch() {
-    document.getElementById('searchInput').value = '';
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.value = '';
+    }
     renderGallery();
     showSuccessMessage('已清除搜索条件');
 }
@@ -881,10 +957,20 @@ async function deleteSelectedPhotos() {
         await saveData('photographyPhotos', photos);
         
         // 清除DataManager缓存
-        if (window.dataManager && window.dataManager.cache) {
-            window.dataManager.cache.photos = null;
-            window.dataManager.cache.lastFetch = null;
-            console.log('已清除DataManager缓存');
+        if (window.dataManager) {
+            try {
+                if (typeof window.dataManager.clearCacheByType === 'function') {
+                    window.dataManager.clearCacheByType('photos');
+                } else if (window.dataManager.cache) {
+                    window.dataManager.cache.photos = null;
+                    if (window.dataManager.cacheTimestamps) {
+                        delete window.dataManager.cacheTimestamps.photos;
+                    }
+                }
+                console.log('已清除DataManager缓存');
+            } catch (cacheError) {
+                console.warn('清除缓存时出错:', cacheError);
+            }
         }
         
         selectedPhotos = [];
@@ -901,10 +987,20 @@ async function deletePhoto(photoId) {
         await saveData('photographyPhotos', photos);
         
         // 清除DataManager缓存
-        if (window.dataManager && window.dataManager.cache) {
-            window.dataManager.cache.photos = null;
-            window.dataManager.cache.lastFetch = null;
-            console.log('已清除DataManager缓存');
+        if (window.dataManager) {
+            try {
+                if (typeof window.dataManager.clearCacheByType === 'function') {
+                    window.dataManager.clearCacheByType('photos');
+                } else if (window.dataManager.cache) {
+                    window.dataManager.cache.photos = null;
+                    if (window.dataManager.cacheTimestamps) {
+                        delete window.dataManager.cacheTimestamps.photos;
+                    }
+                }
+                console.log('已清除DataManager缓存');
+            } catch (cacheError) {
+                console.warn('清除缓存时出错:', cacheError);
+            }
         }
         
         // 从选中列表中移除
@@ -1533,45 +1629,55 @@ function initializeUpload() {
     const customCategoryGroup = document.getElementById('customCategoryGroup');
     
     // 点击上传区域触发文件选择
-    uploadArea.addEventListener('click', () => {
-        imageInput.click();
-    });
+    if (uploadArea && imageInput) {
+        uploadArea.addEventListener('click', () => {
+            imageInput.click();
+        });
+    }
     
     // 拖拽上传
-    uploadArea.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        uploadArea.classList.add('dragover');
-    });
-    
-    uploadArea.addEventListener('dragleave', () => {
-        uploadArea.classList.remove('dragover');
-    });
-    
-    uploadArea.addEventListener('drop', (e) => {
-        e.preventDefault();
-        uploadArea.classList.remove('dragover');
-        const files = e.dataTransfer.files;
-        handleFileUpload(files);
-    });
+    if (uploadArea) {
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            handleFileUpload(files);
+        });
+    }
     
     // 文件选择
-    imageInput.addEventListener('change', (e) => {
-        handleFileUpload(e.target.files);
-    });
+    if (imageInput) {
+        imageInput.addEventListener('change', (e) => {
+            handleFileUpload(e.target.files);
+        });
+    }
     
     // 分类选择变化
-    categorySelect.addEventListener('change', (e) => {
-        if (e.target.value === 'custom') {
-            customCategoryGroup.style.display = 'block';
-        } else {
-            customCategoryGroup.style.display = 'none';
-        }
-        // 更新文件夹选项
-        updateFolderSelect();
-    });
+    if (categorySelect && customCategoryGroup) {
+        categorySelect.addEventListener('change', (e) => {
+            if (e.target.value === 'custom') {
+                customCategoryGroup.style.display = 'block';
+            } else {
+                customCategoryGroup.style.display = 'none';
+            }
+            // 更新文件夹选项
+            updateFolderSelect();
+        });
+    }
     
     // 上传按钮
-    uploadBtn.addEventListener('click', uploadImages);
+    if (uploadBtn) {
+        uploadBtn.addEventListener('click', uploadImages);
+    }
 }
 
 // 处理文件上传
@@ -1605,8 +1711,10 @@ function handleFileUpload(files) {
         `;
         
         // 显示文件计数
-        fileCountDiv.style.display = 'block';
-        fileCountDiv.textContent = `已选择 ${fileCount} 张图片 ${fileCount > 1 ? '(批量上传)' : ''}`;
+        if (fileCountDiv) {
+            fileCountDiv.style.display = 'block';
+            fileCountDiv.textContent = `已选择 ${fileCount} 张图片 ${fileCount > 1 ? '(批量上传)' : ''}`;
+        }
     }
     
     // 存储文件到全局变量
@@ -1740,12 +1848,23 @@ async function uploadImages() {
         return;
     }
     
-    const title = document.getElementById('imageTitle').value.trim();
-    const description = document.getElementById('imageDescription').value.trim();
-    const category = document.getElementById('imageCategory').value;
-    const customCategory = document.getElementById('customCategory').value.trim();
-    const guestVisible = document.getElementById('guestVisible') ? document.getElementById('guestVisible').checked : true;
-    const selectedFolder = document.getElementById('folderSelect').value;
+    const titleElement = document.getElementById('imageTitle');
+     const title = titleElement ? titleElement.value.trim() : '';
+     
+     const descriptionElement = document.getElementById('imageDescription');
+     const description = descriptionElement ? descriptionElement.value.trim() : '';
+     
+     const categoryElement = document.getElementById('imageCategory');
+     const category = categoryElement ? categoryElement.value : 'portrait';
+     
+     const customCategoryElement = document.getElementById('customCategory');
+     const customCategory = customCategoryElement ? customCategoryElement.value.trim() : '';
+     
+     const guestVisibleElement = document.getElementById('guestVisible');
+     const guestVisible = guestVisibleElement ? guestVisibleElement.checked : true;
+     
+     const folderSelectElement = document.getElementById('folderSelect');
+     const selectedFolder = folderSelectElement ? folderSelectElement.value : '';
     
     if (!title) {
         alert('请输入作品标题！');
@@ -1925,26 +2044,33 @@ async function completeUpload() {
         const uploadBtn = document.getElementById('uploadBtn');
         uploadBtn.innerHTML = '<span class="loading"></span> 保存中...';
         
-        // 保存到本地存储
-        console.log('保存数据到本地存储...');
-        await saveData('photographyPhotos', photos);
-        console.log('本地存储保存成功');
+        // 使用DataManager保存数据（包含本地存储和云端同步）
+        console.log('保存照片数据...');
+        uploadBtn.innerHTML = '<span class="loading"></span> 保存中...';
         
-        // 如果配置了GitHub，同步数据到云端
-        if (window.githubManager && window.githubManager.isConfigured()) {
-            try {
-                console.log('同步数据到GitHub云端...');
-                uploadBtn.innerHTML = '<span class="loading"></span> 云端同步中...';
-                await window.dataManager.saveFileToGitHub('data/photos.json', photos);
-                console.log('图片数据已同步到GitHub云端');
+        try {
+            // 使用DataManager的savePhotos方法，它会自动处理本地存储和云端同步
+            await window.dataManager.savePhotos(photos);
+            
+            if (window.githubManager && window.githubManager.isConfigured()) {
+                console.log('照片数据已保存并同步到云端');
                 showSuccessMessage('作品上传并同步到云端成功！');
-            } catch (error) {
-                console.error('同步数据到GitHub失败:', error);
-                showErrorMessage(`云端同步失败: ${error.message}，但图片已保存到本地`);
+            } else {
+                console.log('照片数据已保存到本地');
+                showSuccessMessage('作品上传成功！（仅保存到本地）');
             }
-        } else {
-            console.log('GitHub未配置，仅保存到本地');
-            showSuccessMessage('作品上传成功！（仅保存到本地）');
+        } catch (error) {
+            console.error('保存照片数据失败:', error);
+            // 降级到直接保存本地存储
+            try {
+                localStorage.setItem('photographyPhotos', JSON.stringify(photos));
+                console.log('已降级保存到本地存储');
+                showErrorMessage(`云端同步失败: ${error.message}，但图片已保存到本地`);
+            } catch (localError) {
+                console.error('本地存储也失败:', localError);
+                showErrorMessage(`保存失败: ${localError.message}`);
+                throw localError;
+            }
         }
         
         // 强制清除缓存并重新渲染
@@ -1952,10 +2078,19 @@ async function completeUpload() {
         
         // 清除DataManager缓存
         if (window.dataManager) {
-            if (window.dataManager.cache) {
-                window.dataManager.cache.photos = null;
-                window.dataManager.cache.lastFetch = null;
+            try {
+                // 使用DataManager的clearCacheByType方法安全清除缓存
+                if (typeof window.dataManager.clearCacheByType === 'function') {
+                    window.dataManager.clearCacheByType('photos');
+                } else if (window.dataManager.cache) {
+                    window.dataManager.cache.photos = null;
+                    if (window.dataManager.cacheTimestamps) {
+                        delete window.dataManager.cacheTimestamps.photos;
+                    }
+                }
                 console.log('已清除DataManager缓存');
+            } catch (cacheError) {
+                console.warn('清除缓存时出错:', cacheError);
             }
             
             // 强制重新加载数据
@@ -1981,14 +2116,35 @@ async function completeUpload() {
         renderGallery();
         
         // 重置表单
-        document.getElementById('imageTitle').value = '';
-        document.getElementById('imageDescription').value = '';
-        document.getElementById('imageCategory').value = 'portrait';
-        document.getElementById('customCategory').value = '';
-        document.getElementById('customCategoryGroup').style.display = 'none';
-        document.getElementById('folderSelect').value = '';
-        document.getElementById('newFolderGroup').style.display = 'none';
-        document.getElementById('newFolderName').value = '';
+        const imageTitle = document.getElementById('imageTitle');
+         if (imageTitle) imageTitle.value = '';
+         
+         const imageDescription = document.getElementById('imageDescription');
+         if (imageDescription) imageDescription.value = '';
+         
+         const imageCategory = document.getElementById('imageCategory');
+         if (imageCategory) imageCategory.value = 'portrait';
+         
+         const customCategory = document.getElementById('customCategory');
+         if (customCategory) customCategory.value = '';
+        const customCategoryGroup = document.getElementById('customCategoryGroup');
+        if (customCategoryGroup) {
+            customCategoryGroup.style.display = 'none';
+        }
+        
+        const folderSelect = document.getElementById('folderSelect');
+        if (folderSelect) {
+            folderSelect.value = '';
+        }
+        
+        const newFolderGroup = document.getElementById('newFolderGroup');
+        if (newFolderGroup) {
+            newFolderGroup.style.display = 'none';
+        }
+        const newFolderName = document.getElementById('newFolderName');
+         if (newFolderName) {
+             newFolderName.value = '';
+         }
         
         // 隐藏文件计数
         const fileCountDiv = document.getElementById('fileCount');
@@ -2012,7 +2168,10 @@ async function completeUpload() {
         
         // 清除选中的文件
         window.selectedFiles = null;
-        document.getElementById('imageInput').value = '';
+        const imageInput = document.getElementById('imageInput');
+        if (imageInput) {
+            imageInput.value = '';
+        }
         
         console.log('上传流程完成');
         
@@ -2041,24 +2200,40 @@ async function initializeNotebook() {
     renderNotesList();
     
     // 新建记录按钮
-    document.getElementById('newNoteBtn').addEventListener('click', createNewNote);
+    const newNoteBtn = document.getElementById('newNoteBtn');
+    if (newNoteBtn) {
+        newNoteBtn.addEventListener('click', createNewNote);
+    }
     
     // 保存按钮
-    document.getElementById('saveNoteBtn').addEventListener('click', saveCurrentNote);
+    const saveNoteBtn = document.getElementById('saveNoteBtn');
+    if (saveNoteBtn) {
+        saveNoteBtn.addEventListener('click', saveCurrentNote);
+    }
     
     // 导出按钮
-    document.getElementById('exportNoteBtn').addEventListener('click', exportCurrentNote);
+    const exportNoteBtn = document.getElementById('exportNoteBtn');
+    if (exportNoteBtn) {
+        exportNoteBtn.addEventListener('click', exportCurrentNote);
+    }
     
     // 删除按钮
-    document.getElementById('deleteNoteBtn').addEventListener('click', deleteCurrentNote);
+    const deleteNoteBtn = document.getElementById('deleteNoteBtn');
+    if (deleteNoteBtn) {
+        deleteNoteBtn.addEventListener('click', deleteCurrentNote);
+    }
     
     // 内容变化监听
     const noteContent = document.getElementById('noteContent');
     const noteTitle = document.getElementById('noteTitle');
     
-    noteContent.addEventListener('input', updateWordCount);
-    noteTitle.addEventListener('input', updateNotePreview);
-    noteContent.addEventListener('input', updateNotePreview);
+    if (noteContent) {
+        noteContent.addEventListener('input', updateWordCount);
+        noteContent.addEventListener('input', updateNotePreview);
+    }
+    if (noteTitle) {
+        noteTitle.addEventListener('input', updateNotePreview);
+    }
     
     // 如果有记录，加载第一个
     if (notes.length > 0) {
@@ -2115,7 +2290,10 @@ async function createNewNote() {
     renderNotesList();
     
     // 聚焦到标题输入框
-    document.getElementById('noteTitle').focus();
+    const noteTitle = document.getElementById('noteTitle');
+        if (noteTitle) {
+            noteTitle.focus();
+        }
 }
 
 // 加载记录
@@ -2125,9 +2303,20 @@ function loadNote(noteId) {
     
     currentNoteId = noteId;
     
-    document.getElementById('noteTitle').value = note.title || '';
-    document.getElementById('noteContent').value = note.content || '';
-    document.getElementById('noteDate').textContent = `创建于 ${formatDate(note.createdAt)} | 最后修改 ${formatDate(note.lastModified)}`;
+    const noteTitle = document.getElementById('noteTitle');
+        if (noteTitle) {
+            noteTitle.value = note.title || '';
+        }
+        
+        const noteContent = document.getElementById('noteContent');
+        if (noteContent) {
+            noteContent.value = note.content || '';
+        }
+        
+        const noteDate = document.getElementById('noteDate');
+        if (noteDate) {
+            noteDate.textContent = `创建于 ${formatDate(note.createdAt)} | 最后修改 ${formatDate(note.lastModified)}`;
+        }
     
     updateWordCount();
     renderNotesList();
@@ -2145,8 +2334,11 @@ async function saveCurrentNote() {
     const note = notes.find(n => n.id === currentNoteId);
     if (!note) return;
     
-    note.title = document.getElementById('noteTitle').value.trim() || '无标题';
-    note.content = document.getElementById('noteContent').value;
+    const noteTitleElement = document.getElementById('noteTitle');
+    const noteContentElement = document.getElementById('noteContent');
+    
+    note.title = noteTitleElement ? (noteTitleElement.value.trim() || '无标题') : '无标题';
+    note.content = noteContentElement ? noteContentElement.value : '';
     note.lastModified = new Date().toISOString();
     
     await saveData('photographyNotes', notes);
@@ -2202,9 +2394,20 @@ async function deleteCurrentNote() {
         loadNote(notes[0].id);
     } else {
         currentNoteId = null;
-        document.getElementById('noteTitle').value = '';
-        document.getElementById('noteContent').value = '';
-        document.getElementById('noteDate').textContent = '';
+        const noteTitle = document.getElementById('noteTitle');
+    if (noteTitle) {
+        noteTitle.value = '';
+    }
+    
+    const noteContent = document.getElementById('noteContent');
+    if (noteContent) {
+        noteContent.value = '';
+    }
+    
+    const noteDate = document.getElementById('noteDate');
+    if (noteDate) {
+        noteDate.textContent = '';
+    }
         updateWordCount();
     }
     
@@ -2214,9 +2417,14 @@ async function deleteCurrentNote() {
 
 // 更新字数统计
 function updateWordCount() {
-    const content = document.getElementById('noteContent').value;
+    const noteContentElement = document.getElementById('noteContent');
+    const content = noteContentElement ? noteContentElement.value : '';
     const wordCount = content.length;
-    document.getElementById('wordCount').textContent = `${wordCount} 字`;
+    
+    const wordCountElement = document.getElementById('wordCount');
+    if (wordCountElement) {
+        wordCountElement.textContent = `${wordCount} 字`;
+    }
 }
 
 // 更新记录预览
@@ -2226,8 +2434,11 @@ function updateNotePreview() {
     const note = notes.find(n => n.id === currentNoteId);
     if (!note) return;
     
-    note.title = document.getElementById('noteTitle').value.trim() || '无标题';
-    note.content = document.getElementById('noteContent').value;
+    const noteTitleElement = document.getElementById('noteTitle');
+    const noteContentElement = document.getElementById('noteContent');
+    
+    note.title = noteTitleElement ? (noteTitleElement.value.trim() || '无标题') : '无标题';
+    note.content = noteContentElement ? noteContentElement.value : '';
     
     renderNotesList();
 }
@@ -2261,18 +2472,22 @@ function initializeModal() {
     const closeBtn = document.getElementById('closeModal');
     
     // 关闭模态框
-    closeBtn.addEventListener('click', closeImageModal);
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeImageModal);
+    }
     
     // 点击模态框外部关闭
-    modal.addEventListener('click', function(e) {
-        if (e.target === modal) {
-            closeImageModal();
-        }
-    });
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeImageModal();
+            }
+        });
+    }
     
     // ESC键关闭
     document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && modal.style.display === 'block') {
+        if (e.key === 'Escape' && modal && modal.style.display === 'block') {
             closeImageModal();
         }
     });
@@ -2292,20 +2507,32 @@ function openImageModal(photoId) {
     // 根据用户身份显示对应版本的图片
     const imageUrl = getImageUrlForUser(photo);
     
-    modalImage.src = imageUrl;
-    modalImage.alt = photo.title;
-    modalTitle.textContent = photo.title;
-    modalDescription.textContent = photo.description;
-    modalCategory.textContent = getCategoryDisplayName(photo.category);
+    if (modalImage) {
+        modalImage.src = imageUrl;
+        modalImage.alt = photo.title;
+    }
+    if (modalTitle) {
+        modalTitle.textContent = photo.title;
+    }
+    if (modalDescription) {
+        modalDescription.textContent = photo.description;
+    }
+    if (modalCategory) {
+        modalCategory.textContent = getCategoryDisplayName(photo.category);
+    }
     
-    modal.style.display = 'block';
+    if (modal) {
+        modal.style.display = 'block';
+    }
     document.body.style.overflow = 'hidden';
 }
 
 // 关闭图片模态框
 function closeImageModal() {
     const modal = document.getElementById('imageModal');
-    modal.style.display = 'none';
+    if (modal) {
+        modal.style.display = 'none';
+    }
     document.body.style.overflow = 'auto';
 }
 
@@ -2325,7 +2552,9 @@ function showSuccessMessage(message) {
     // 创建消息元素
     const messageDiv = document.createElement('div');
     messageDiv.className = 'success-message';
-    messageDiv.textContent = message;
+    if (messageDiv) {
+        messageDiv.textContent = message;
+    }
     messageDiv.style.cssText = `
         position: fixed;
         top: 20px;
@@ -2504,18 +2733,29 @@ function toggleEditMode() {
     const editPanel = document.querySelector('.admin-edit-panel');
     const editBtn = document.querySelector('.edit-about-btn');
     
-    if (editPanel.style.display === 'none' || !editPanel.style.display) {
+    if (editPanel && (editPanel.style.display === 'none' || !editPanel.style.display)) {
         // 显示编辑面板
         editPanel.style.display = 'block';
-        editBtn.textContent = '取消编辑';
+        if (editBtn) {
+            editBtn.textContent = '取消编辑';
+        }
         
         // 填充当前信息到编辑表单
-        document.getElementById('editName').value = aboutInfo.name;
-        document.getElementById('editDescription').value = aboutInfo.description.replace(/<p>/g, '').replace(/<\/p>/g, '\n').trim();
-    } else {
+        const editNameElement = document.getElementById('editName');
+        if (editNameElement) {
+            editNameElement.value = aboutInfo.name;
+        }
+        
+        const editDescriptionElement = document.getElementById('editDescription');
+        if (editDescriptionElement) {
+            editDescriptionElement.value = aboutInfo.description.replace(/<p>/g, '').replace(/<\/p>/g, '\n').trim();
+        }
+    } else if (editPanel) {
         // 隐藏编辑面板
         editPanel.style.display = 'none';
-        editBtn.textContent = '编辑个人信息';
+        if (editBtn) {
+            editBtn.textContent = '编辑个人信息';
+        }
     }
 }
 

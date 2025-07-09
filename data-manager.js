@@ -287,121 +287,218 @@ class DataManager {
     
     // 获取记事本数据
     async getNotes() {
-        if (this.cache.notes) {
+        // 检查缓存是否有效且未过期
+        if (this.cache.notes && !this.isCacheExpired('notes')) {
             return this.cache.notes;
         }
         
         let notes = [];
         
-        if (this.useCloudStorage) {
-            const cloudData = await this.getFileFromGitHub(this.dataFiles.notes);
-            if (cloudData) {
-                notes = cloudData;
+        if (this.isGitHubConfigured()) {
+            try {
+                const cloudData = await this.getFileFromGitHub(this.dataFiles.notes);
+                if (cloudData && Array.isArray(cloudData)) {
+                    notes = cloudData;
+                    console.log('从GitHub加载记事本数据成功');
+                }
+            } catch (error) {
+                console.warn('从GitHub加载记事本数据失败:', error);
             }
         }
         
+        // 如果云端没有数据，尝试从localStorage获取
         if (notes.length === 0) {
             const localData = localStorage.getItem('photographyNotes');
             if (localData) {
-                notes = JSON.parse(localData);
+                try {
+                    notes = JSON.parse(localData);
+                    console.log('从本地存储加载记事本数据');
+                } catch (error) {
+                    console.error('解析本地记事本数据失败:', error);
+                    notes = [];
+                }
             }
         }
         
+        // 更新缓存和时间戳
         this.cache.notes = notes;
+        this.setCacheTimestamp('notes');
         return notes;
     }
     
     // 保存记事本数据
     async saveNotes(notes) {
-        this.cache.notes = notes;
-        localStorage.setItem('photographyNotes', JSON.stringify(notes));
-        
-        if (this.useCloudStorage) {
-            await this.saveFileToGitHub(this.dataFiles.notes, notes);
+        try {
+            // 更新缓存
+            this.cache.notes = notes;
+            this.setCacheTimestamp('notes');
+            
+            // 始终保存到localStorage作为备份
+            localStorage.setItem('photographyNotes', JSON.stringify(notes));
+            console.log('记事本数据已保存到本地存储');
+            
+            // 如果配置了GitHub，同步到云端
+            if (this.isGitHubConfigured()) {
+                try {
+                    await this.saveFileToGitHub(this.dataFiles.notes, notes);
+                    console.log('记事本数据已同步到GitHub');
+                } catch (error) {
+                    console.error('同步记事本数据到GitHub失败:', error);
+                    throw error;
+                }
+            }
+            
+            return true;
+        } catch (error) {
+            console.error('保存记事本数据失败:', error);
+            throw error;
         }
-        
-        return true;
     }
     
     // 获取自定义分类数据
     async getCategories() {
-        if (this.cache.categories) {
+        // 检查缓存是否有效且未过期
+        if (this.cache.categories && !this.isCacheExpired('categories')) {
             return this.cache.categories;
         }
         
         let categories = [];
         
-        if (this.useCloudStorage) {
-            const cloudData = await this.getFileFromGitHub(this.dataFiles.categories);
-            if (cloudData) {
-                categories = cloudData;
+        if (this.isGitHubConfigured()) {
+            try {
+                const cloudData = await this.getFileFromGitHub(this.dataFiles.categories);
+                if (cloudData && Array.isArray(cloudData)) {
+                    categories = cloudData;
+                    console.log('从GitHub加载分类数据成功');
+                }
+            } catch (error) {
+                console.warn('从GitHub加载分类数据失败:', error);
             }
         }
         
+        // 如果云端没有数据，尝试从localStorage获取
         if (categories.length === 0) {
             const localData = localStorage.getItem('customCategories');
             if (localData) {
-                categories = JSON.parse(localData);
+                try {
+                    categories = JSON.parse(localData);
+                    console.log('从本地存储加载分类数据');
+                } catch (error) {
+                    console.error('解析本地分类数据失败:', error);
+                    categories = [];
+                }
             }
         }
         
+        // 更新缓存和时间戳
         this.cache.categories = categories;
+        this.setCacheTimestamp('categories');
         return categories;
     }
     
     // 保存自定义分类数据
     async saveCategories(categories) {
-        this.cache.categories = categories;
-        localStorage.setItem('customCategories', JSON.stringify(categories));
-        
-        if (this.useCloudStorage) {
-            await this.saveFileToGitHub(this.dataFiles.categories, categories);
+        try {
+            // 更新缓存
+            this.cache.categories = categories;
+            this.setCacheTimestamp('categories');
+            
+            // 始终保存到localStorage作为备份
+            localStorage.setItem('customCategories', JSON.stringify(categories));
+            console.log('分类数据已保存到本地存储');
+            
+            // 如果配置了GitHub，同步到云端
+            if (this.isGitHubConfigured()) {
+                try {
+                    await this.saveFileToGitHub(this.dataFiles.categories, categories);
+                    console.log('分类数据已同步到GitHub');
+                } catch (error) {
+                    console.error('同步分类数据到GitHub失败:', error);
+                    throw error;
+                }
+            }
+            
+            return true;
+        } catch (error) {
+            console.error('保存分类数据失败:', error);
+            throw error;
         }
-        
-        return true;
     }
     
     // 获取文件夹数据
     async getFolders() {
-        if (this.cache.folders) {
+        // 检查缓存是否有效且未过期
+        if (this.cache.folders && !this.isCacheExpired('folders')) {
             return this.cache.folders;
         }
         
         let folders = [];
         
-        if (this.useCloudStorage) {
-            const cloudData = await this.getFileFromGitHub(this.dataFiles.folders);
-            if (cloudData) {
-                folders = cloudData;
+        if (this.isGitHubConfigured()) {
+            try {
+                const cloudData = await this.getFileFromGitHub(this.dataFiles.folders);
+                if (cloudData && Array.isArray(cloudData)) {
+                    folders = cloudData;
+                    console.log('从GitHub加载文件夹数据成功');
+                }
+            } catch (error) {
+                console.warn('从GitHub加载文件夹数据失败:', error);
             }
         }
         
+        // 如果云端没有数据，尝试从localStorage获取
         if (folders.length === 0) {
             const localData = localStorage.getItem('photographyFolders');
             if (localData) {
-                folders = JSON.parse(localData);
+                try {
+                    folders = JSON.parse(localData);
+                    console.log('从本地存储加载文件夹数据');
+                } catch (error) {
+                    console.error('解析本地文件夹数据失败:', error);
+                    folders = [];
+                }
             }
         }
         
+        // 更新缓存和时间戳
         this.cache.folders = folders;
+        this.setCacheTimestamp('folders');
         return folders;
     }
     
     // 保存文件夹数据
     async saveFolders(folders) {
-        this.cache.folders = folders;
-        localStorage.setItem('photographyFolders', JSON.stringify(folders));
-        
-        if (this.useCloudStorage) {
-            await this.saveFileToGitHub(this.dataFiles.folders, folders);
+        try {
+            // 更新缓存
+            this.cache.folders = folders;
+            this.setCacheTimestamp('folders');
+            
+            // 始终保存到localStorage作为备份
+            localStorage.setItem('photographyFolders', JSON.stringify(folders));
+            console.log('文件夹数据已保存到本地存储');
+            
+            // 如果配置了GitHub，同步到云端
+            if (this.isGitHubConfigured()) {
+                try {
+                    await this.saveFileToGitHub(this.dataFiles.folders, folders);
+                    console.log('文件夹数据已同步到GitHub');
+                } catch (error) {
+                    console.error('同步文件夹数据到GitHub失败:', error);
+                    throw error;
+                }
+            }
+            
+            return true;
+        } catch (error) {
+            console.error('保存文件夹数据失败:', error);
+            throw error;
         }
-        
-        return true;
     }
     
     // 获取关于我数据
     async getAboutInfo() {
-        if (this.cache.about) {
+        // 检查缓存是否有效且未过期
+        if (this.cache.about && !this.isCacheExpired('about')) {
             return this.cache.about;
         }
         
@@ -417,34 +514,67 @@ class DataManager {
             }
         };
         
-        if (this.useCloudStorage) {
-            const cloudData = await this.getFileFromGitHub(this.dataFiles.about);
-            if (cloudData) {
-                aboutInfo = cloudData;
+        if (this.isGitHubConfigured()) {
+            try {
+                const cloudData = await this.getFileFromGitHub(this.dataFiles.about);
+                if (cloudData) {
+                    aboutInfo = cloudData;
+                    console.log('从GitHub加载关于我数据成功');
+                }
+            } catch (error) {
+                console.warn('从GitHub加载关于我数据失败:', error);
             }
         }
         
-        if (!cloudData) {
+        // 如果云端没有数据，尝试从localStorage获取
+        if (!aboutInfo || Object.keys(aboutInfo).length === 0) {
             const localData = localStorage.getItem('aboutInfo');
             if (localData) {
-                aboutInfo = JSON.parse(localData);
+                try {
+                    const parsedData = JSON.parse(localData);
+                    if (parsedData && Object.keys(parsedData).length > 0) {
+                        aboutInfo = parsedData;
+                        console.log('从本地存储加载关于我数据');
+                    }
+                } catch (error) {
+                    console.error('解析本地关于我数据失败:', error);
+                }
             }
         }
         
+        // 更新缓存和时间戳
         this.cache.about = aboutInfo;
+        this.setCacheTimestamp('about');
         return aboutInfo;
     }
     
     // 保存关于我数据
     async saveAboutInfo(aboutInfo) {
-        this.cache.about = aboutInfo;
-        localStorage.setItem('aboutInfo', JSON.stringify(aboutInfo));
-        
-        if (this.useCloudStorage) {
-            await this.saveFileToGitHub(this.dataFiles.about, aboutInfo);
+        try {
+            // 更新缓存
+            this.cache.about = aboutInfo;
+            this.setCacheTimestamp('about');
+            
+            // 始终保存到localStorage作为备份
+            localStorage.setItem('aboutInfo', JSON.stringify(aboutInfo));
+            console.log('关于我数据已保存到本地存储');
+            
+            // 如果配置了GitHub，同步到云端
+            if (this.isGitHubConfigured()) {
+                try {
+                    await this.saveFileToGitHub(this.dataFiles.about, aboutInfo);
+                    console.log('关于我数据已同步到GitHub');
+                } catch (error) {
+                    console.error('同步关于我数据到GitHub失败:', error);
+                    throw error;
+                }
+            }
+            
+            return true;
+        } catch (error) {
+            console.error('保存关于我数据失败:', error);
+            throw error;
         }
-        
-        return true;
     }
     
     // 清除缓存
@@ -460,12 +590,14 @@ class DataManager {
     
     // 同步所有数据到云端
     async syncAllData() {
-        if (!this.useCloudStorage) {
-            console.log('云端存储不可用，跳过同步');
+        if (!this.isGitHubConfigured()) {
+            console.log('GitHub未配置，无法同步到云端');
             return false;
         }
         
         try {
+            console.log('开始同步所有数据到云端...');
+            
             // 获取本地数据并同步到云端
             const photos = JSON.parse(localStorage.getItem('photographyPhotos') || '[]');
             const notes = JSON.parse(localStorage.getItem('photographyNotes') || '[]');
@@ -473,19 +605,25 @@ class DataManager {
             const folders = JSON.parse(localStorage.getItem('photographyFolders') || '[]');
             const aboutInfo = JSON.parse(localStorage.getItem('aboutInfo') || '{}');
             
-            await Promise.all([
+            // 并行同步所有数据
+            const syncPromises = [
                 this.saveFileToGitHub(this.dataFiles.photos, photos),
                 this.saveFileToGitHub(this.dataFiles.notes, notes),
                 this.saveFileToGitHub(this.dataFiles.categories, categories),
                 this.saveFileToGitHub(this.dataFiles.folders, folders),
                 this.saveFileToGitHub(this.dataFiles.about, aboutInfo)
-            ]);
+            ];
             
-            console.log('数据同步完成');
+            await Promise.all(syncPromises);
+            
+            // 清除缓存以确保下次获取最新数据
+            this.clearCache();
+            
+            console.log('所有数据同步到云端完成');
             return true;
         } catch (error) {
             console.error('数据同步失败:', error);
-            return false;
+            throw error;
         }
     }
 }

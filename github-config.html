@@ -303,16 +303,36 @@
         // 加载当前配置
         function loadCurrentConfig() {
             if (window.githubManager && window.githubManager.isConfigured()) {
-                document.getElementById('currentConfig').style.display = 'block';
-                document.getElementById('currentRepo').textContent = 
-                    `${window.githubManager.owner}/${window.githubManager.repo}`;
-                document.getElementById('currentBranch').textContent = window.githubManager.branch;
-                document.getElementById('currentStatus').textContent = '已配置';
+                const currentConfig = document.getElementById('currentConfig');
+                if (currentConfig) {
+                    currentConfig.style.display = 'block';
+                }
+                const currentRepo = document.getElementById('currentRepo');
+        if (currentRepo) {
+            currentRepo.textContent = `${window.githubManager.owner}/${window.githubManager.repo}`;
+        }
+        const currentBranch = document.getElementById('currentBranch');
+        if (currentBranch) {
+            currentBranch.textContent = window.githubManager.branch;
+        }
+        const currentStatus = document.getElementById('currentStatus');
+        if (currentStatus) {
+            currentStatus.textContent = '已配置';
+        }
                 
                 // 填充表单
-                document.getElementById('githubOwner').value = window.githubManager.owner;
-                document.getElementById('githubRepo').value = window.githubManager.repo;
-                document.getElementById('githubBranch').value = window.githubManager.branch;
+                const githubOwner = document.getElementById('githubOwner');
+        if (githubOwner) {
+            githubOwner.value = window.githubManager.owner;
+        }
+        const githubRepo = document.getElementById('githubRepo');
+        if (githubRepo) {
+            githubRepo.value = window.githubManager.repo;
+        }
+        const githubBranch = document.getElementById('githubBranch');
+        if (githubBranch) {
+            githubBranch.value = window.githubManager.branch;
+        }
             }
         }
 
@@ -320,9 +340,18 @@
         function clearConfig() {
             if (confirm('确定要清除GitHub配置吗？这将禁用云端同步功能。')) {
                 window.githubManager.clearConfig();
-                document.getElementById('currentConfig').style.display = 'none';
-                document.getElementById('githubConfigForm').reset();
-                document.getElementById('githubBranch').value = 'main';
+                const currentConfig = document.getElementById('currentConfig');
+                if (currentConfig) {
+                    currentConfig.style.display = 'none';
+                }
+                const form = document.getElementById('githubConfigForm');
+                if (form) {
+                    form.reset();
+                }
+                const githubBranch = document.getElementById('githubBranch');
+        if (githubBranch) {
+            githubBranch.value = 'main';
+        }
                 showMessage('配置已清除', 'info');
             }
         }
@@ -383,7 +412,9 @@
         }
 
         // 表单提交
-        document.getElementById('githubConfigForm').addEventListener('submit', async function(e) {
+        const githubConfigForm = document.getElementById('githubConfigForm');
+        if (githubConfigForm) {
+            githubConfigForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const token = document.getElementById('githubToken').value.trim();
@@ -414,18 +445,21 @@
             } catch (error) {
                 showMessage(`保存失败: ${error.message}`, 'error');
             }
-        });
+            });
+        }
 
         // 显示消息
         function showMessage(message, type) {
             const messageDiv = document.getElementById('statusMessage');
-            messageDiv.textContent = message;
-            messageDiv.className = `status-message status-${type}`;
-            messageDiv.style.display = 'block';
-            
-            setTimeout(() => {
-                messageDiv.style.display = 'none';
-            }, 5000);
+            if (messageDiv) {
+                messageDiv.textContent = message;
+                messageDiv.className = `status-message status-${type}`;
+                messageDiv.style.display = 'block';
+                
+                setTimeout(() => {
+                    messageDiv.style.display = 'none';
+                }, 5000);
+            }
         }
 
         // 返回主页
