@@ -125,11 +125,8 @@ function updateUserInterface() {
 // 统一数据保存函数
 async function saveData(dataType, data) {
     try {
-        // 保存到本地存储
-        localStorage.setItem(dataType, JSON.stringify(data));
-        
-        // 如果数据管理器可用，同时保存到云端
-        if (window.dataManager && await window.dataManager.isCloudStorageAvailable()) {
+        // 使用DataManager保存数据，它会自动处理本地存储和云端同步
+        if (window.dataManager) {
             switch(dataType) {
                 case 'photographyPhotos':
                     await window.dataManager.savePhotos(data);
@@ -146,69 +143,106 @@ async function saveData(dataType, data) {
                 case 'aboutInfo':
                     await window.dataManager.saveAboutInfo(data);
                     break;
+                default:
+                    // 降级到直接保存到localStorage
+                    localStorage.setItem(dataType, JSON.stringify(data));
+                    console.warn(`未知数据类型 ${dataType}，仅保存到本地存储`);
             }
-            console.log(`${dataType} 已同步到云端`);
+            console.log(`${dataType} 保存成功`);
+        } else {
+            // 降级到直接保存到localStorage
+            localStorage.setItem(dataType, JSON.stringify(data));
+            console.warn('DataManager不可用，仅保存到本地存储');
         }
     } catch (error) {
         console.error(`保存 ${dataType} 失败:`, error);
-        // 即使云端保存失败，本地存储仍然有效
+        // 降级到本地存储
+        try {
+            localStorage.setItem(dataType, JSON.stringify(data));
+            console.log(`${dataType} 已降级保存到本地存储`);
+        } catch (localError) {
+            console.error(`本地存储也失败:`, localError);
+            throw error;
+        }
     }
 }
 
 // 加载所有数据
 async function loadAllData() {
     try {
-        // 如果配置了GitHub，尝试从云端加载数据
-        if (window.dataManager && window.dataManager.isGitHubConfigured()) {
-            console.log('从GitHub云端加载数据...');
+        console.log('开始加载数据...');
+        
+        // 使用DataManager加载所有数据
+        if (window.dataManager) {
             try {
-                // 尝试从GitHub加载图片数据
-                const cloudPhotos = await window.dataManager.loadDataFromGitHub('photos.json');
-                if (cloudPhotos && Array.isArray(cloudPhotos)) {
-                    photos = cloudPhotos;
-                    console.log('成功从GitHub加载图片数据');
-                } else {
-                    throw new Error('GitHub数据格式错误');
+                // 加载照片数据
+                photos = await window.dataManager.getPhotos();
+                console.log(`成功加载 ${photos.length} 张照片`);
+                
+                // 加载记事本数据
+                notes = await window.dataManager.getNotes();
+                console.log(`成功加载 ${notes.length} 条记录`);
+                
+                // 加载自定义分类数据
+                customCategories = await window.dataManager.getCategories();
+                console.log(`成功加载 ${customCategories.length} 个自定义分类`);
+                
+                // 加载文件夹数据
+                folders = await window.dataManager.getFolders();
+                console.log(`成功加载 ${folders.length} 个文件夹`);
+                
+                // 加载关于我数据
+                const loadedAboutInfo = await window.dataManager.getAboutInfo();
+                if (loadedAboutInfo) {
+                    aboutInfo = { ...aboutInfo, ...loadedAboutInfo };
                 }
+                
             } catch (error) {
-                console.warn('从GitHub加载图片数据失败，使用本地数据:', error);
-                photos = JSON.parse(localStorage.getItem('photographyPhotos') || '[]');
-            }
-            
-            // 加载其他数据（暂时从本地加载，后续可扩展到GitHub）
-            notes = JSON.parse(localStorage.getItem('photographyNotes') || '[]');
-            customCategories = JSON.parse(localStorage.getItem('customCategories') || '[]');
-            folders = JSON.parse(localStorage.getItem('photographyFolders') || '[]');
-            const savedAboutInfo = localStorage.getItem('aboutInfo');
-            if (savedAboutInfo) {
-                aboutInfo = { ...aboutInfo, ...JSON.parse(savedAboutInfo) };
+                console.error('使用DataManager加载数据失败:', error);
+                // 降级到直接从localStorage加载
+                await loadDataFromLocalStorage();
             }
         } else {
-            // 从localStorage加载数据
-            console.log('从本地存储加载数据...');
-            photos = JSON.parse(localStorage.getItem('photographyPhotos') || '[]');
-            notes = JSON.parse(localStorage.getItem('photographyNotes') || '[]');
-            customCategories = JSON.parse(localStorage.getItem('customCategories') || '[]');
-            folders = JSON.parse(localStorage.getItem('photographyFolders') || '[]');
-            const savedAboutInfo = localStorage.getItem('aboutInfo');
-            if (savedAboutInfo) {
-                aboutInfo = { ...aboutInfo, ...JSON.parse(savedAboutInfo) };
-            }
+            console.warn('DataManager未初始化，从本地存储加载数据');
+            await loadDataFromLocalStorage();
         }
+        
         dataLoaded = true;
         console.log('数据加载完成');
+        
+        // 升级现有照片数据格式（如果需要）
+        await upgradeExistingPhotos();
+        
     } catch (error) {
         console.error('数据加载失败:', error);
-        // 如果云端加载失败，尝试从localStorage加载
+        // 最后的降级方案
+        await loadDataFromLocalStorage();
+        dataLoaded = true;
+    }
+}
+
+// 从本地存储加载数据的降级函数
+async function loadDataFromLocalStorage() {
+    try {
+        console.log('从本地存储加载数据...');
         photos = JSON.parse(localStorage.getItem('photographyPhotos') || '[]');
         notes = JSON.parse(localStorage.getItem('photographyNotes') || '[]');
         customCategories = JSON.parse(localStorage.getItem('customCategories') || '[]');
         folders = JSON.parse(localStorage.getItem('photographyFolders') || '[]');
+        
         const savedAboutInfo = localStorage.getItem('aboutInfo');
         if (savedAboutInfo) {
             aboutInfo = { ...aboutInfo, ...JSON.parse(savedAboutInfo) };
         }
-        dataLoaded = true;
+        
+        console.log('本地数据加载完成');
+    } catch (error) {
+        console.error('从本地存储加载数据失败:', error);
+        // 初始化为空数组
+        photos = [];
+        notes = [];
+        customCategories = [];
+        folders = [];
     }
 }
 
@@ -337,6 +371,12 @@ function dismissGitHubNotification() {
 
 // 初始化应用
 async function initializeApp() {
+    // 清除DataManager缓存以确保获取最新数据
+    if (window.dataManager && window.dataManager.cache) {
+        window.dataManager.clearCache();
+        console.log('已清除DataManager缓存，确保获取最新数据');
+    }
+    
     // 首先加载所有数据
     await loadAllData();
     
@@ -840,6 +880,13 @@ async function deleteSelectedPhotos() {
         photos = photos.filter(photo => !selectedPhotos.includes(photo.id));
         await saveData('photographyPhotos', photos);
         
+        // 清除DataManager缓存
+        if (window.dataManager && window.dataManager.cache) {
+            window.dataManager.cache.photos = null;
+            window.dataManager.cache.lastFetch = null;
+            console.log('已清除DataManager缓存');
+        }
+        
         selectedPhotos = [];
         renderGallery();
         updateSelectionUI();
@@ -852,6 +899,13 @@ async function deletePhoto(photoId) {
     if (confirm('确定要删除这张图片吗？此操作不可撤销。')) {
         photos = photos.filter(photo => photo.id !== photoId);
         await saveData('photographyPhotos', photos);
+        
+        // 清除DataManager缓存
+        if (window.dataManager && window.dataManager.cache) {
+            window.dataManager.cache.photos = null;
+            window.dataManager.cache.lastFetch = null;
+            console.log('已清除DataManager缓存');
+        }
         
         // 从选中列表中移除
         const index = selectedPhotos.indexOf(photoId);
@@ -1738,178 +1792,248 @@ async function uploadImages() {
     let processedCount = 0;
     
     // 处理每个文件
-    Array.from(files).forEach((file, index) => {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const originalUrl = e.target.result;
+    for (let index = 0; index < files.length; index++) {
+        const file = files[index];
+        
+        try {
+            // 更新进度显示
+            uploadBtn.innerHTML = `<span class="loading"></span> 上传中... (${index + 1}/${files.length})`;
             
-            try {
-                // 为图片添加水印
-                addWatermarkToImage(originalUrl, async (watermarkedUrl) => {
-                    try {
-                        let originalCloudUrl = originalUrl;
-                        let watermarkedCloudUrl = watermarkedUrl;
-                        let isCloudSynced = false;
-                        
-                        // 如果配置了GitHub，尝试上传到云端
-                        if (window.githubManager && window.githubManager.isConfigured()) {
-                            try {
-                                // 生成文件路径
-                                const timestamp = Date.now();
-                                const originalFileName = `original_${timestamp}_${index}_${file.name}`;
-                                const watermarkedFileName = `watermarked_${timestamp}_${index}_${file.name}`;
-                                const categoryPath = getCategoryDisplayName(finalCategory).replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_');
-                                const folderPath = selectedFolder ? selectedFolder.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_') : 'default';
-                                
-                                const originalPath = `images/${categoryPath}/${folderPath}/original/${originalFileName}`;
-                                const watermarkedPath = `images/${categoryPath}/${folderPath}/watermarked/${watermarkedFileName}`;
-                                
-                                // 上传原始图片
-                                const originalUploadResult = await dataManager.uploadImageToGitHub(file, originalPath);
-                                if (originalUploadResult.success) {
-                                    originalCloudUrl = originalUploadResult.url;
-                                }
-                                
-                                // 将水印图片转换为文件并上传
-                                const watermarkedBlob = await fetch(watermarkedUrl).then(r => r.blob());
-                                const watermarkedFile = new File([watermarkedBlob], watermarkedFileName, { type: 'image/jpeg' });
-                                const watermarkedUploadResult = await dataManager.uploadImageToGitHub(watermarkedFile, watermarkedPath);
-                                if (watermarkedUploadResult.success) {
-                                    watermarkedCloudUrl = watermarkedUploadResult.url;
-                                }
-                                
-                                isCloudSynced = originalUploadResult.success && watermarkedUploadResult.success;
-                                if (isCloudSynced) {
-                                    console.log('图片已成功上传到GitHub云端');
-                                }
-                            } catch (error) {
-                                console.error('GitHub上传失败，使用本地存储:', error);
-                                // 继续使用本地URL
-                            }
-                        }
-                        
-                        const photo = {
-                            id: 'photo_' + Date.now() + '_' + index,
-                            title: files.length > 1 ? `${title} (${index + 1})` : title,
-                            description: description,
-                            category: finalCategory,
-                            folder: selectedFolder || '', // 添加文件夹信息
-                            originalUrl: originalCloudUrl, // 存储原始图片URL（优先云端）
-                            watermarkedUrl: watermarkedCloudUrl, // 存储水印图片URL（优先云端）
-                            uploadDate: new Date().toISOString(),
-                            fileName: file.name,
-                            isCloudSynced: isCloudSynced // 标记是否已云端同步
-                        };
-                        
-                        photos.unshift(photo); // 添加到数组开头
-                        processedCount++;
-                        
-                        // 如果是最后一个文件，完成上传
-                        if (processedCount === files.length) {
-                            await completeUpload();
-                        }
-                    } catch (error) {
-                        console.error('处理图片数据时出错:', error);
-                        processedCount++;
-                        
-                        // 即使出错也要检查是否完成
-                        if (processedCount === files.length) {
-                            await completeUpload();
-                        }
-                    }
-                });
-            } catch (error) {
-                console.error('添加水印时出错:', error);
-                processedCount++;
+            // 读取文件
+            const originalUrl = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                const timeout = setTimeout(() => {
+                    reader.abort();
+                    reject(new Error('文件读取超时'));
+                }, 30000);
                 
-                // 即使出错也要检查是否完成
-                if (processedCount === files.length) {
-                    completeUpload().catch(err => {
-                        console.error('完成上传时出错:', err);
-                        showErrorMessage('上传过程中出现错误，请重试');
+                reader.onload = (e) => {
+                    clearTimeout(timeout);
+                    resolve(e.target.result);
+                };
+                
+                reader.onerror = (error) => {
+                    clearTimeout(timeout);
+                    reject(new Error('文件读取失败: ' + error.message));
+                };
+                
+                reader.readAsDataURL(file);
+            });
+            
+            // 添加水印
+            const watermarkedUrl = await new Promise((resolve, reject) => {
+                const timeout = setTimeout(() => {
+                    reject(new Error('水印处理超时'));
+                }, 30000);
+                
+                try {
+                    addWatermarkToImage(originalUrl, (result) => {
+                        clearTimeout(timeout);
+                        resolve(result);
                     });
+                } catch (error) {
+                    clearTimeout(timeout);
+                    reject(error);
+                }
+            });
+            
+            let originalCloudUrl = originalUrl;
+            let watermarkedCloudUrl = watermarkedUrl;
+            let isCloudSynced = false;
+            
+            // 如果配置了GitHub，尝试上传到云端
+            if (window.githubManager && window.githubManager.isConfigured()) {
+                try {
+                    // 生成文件路径
+                    const timestamp = Date.now();
+                    const originalFileName = `original_${timestamp}_${index}_${file.name}`;
+                    const watermarkedFileName = `watermarked_${timestamp}_${index}_${file.name}`;
+                    const categoryPath = getCategoryDisplayName(finalCategory).replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_');
+                    const folderPath = selectedFolder ? selectedFolder.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_') : 'default';
+                    
+                    const originalPath = `images/${categoryPath}/${folderPath}/original/${originalFileName}`;
+                    const watermarkedPath = `images/${categoryPath}/${folderPath}/watermarked/${watermarkedFileName}`;
+                    
+                    // 上传原始图片
+                    console.log(`正在上传原始图片 ${index + 1}/${files.length}...`);
+                    const originalUploadResult = await window.dataManager.uploadImageToGitHub(file, originalPath);
+                    if (originalUploadResult.success) {
+                        originalCloudUrl = originalUploadResult.url;
+                        console.log(`原始图片 ${index + 1} 上传成功`);
+                    }
+                    
+                    // 将水印图片转换为文件并上传
+                    console.log(`正在上传水印图片 ${index + 1}/${files.length}...`);
+                    const watermarkedBlob = await fetch(watermarkedUrl).then(r => r.blob());
+                    const watermarkedFile = new File([watermarkedBlob], watermarkedFileName, { type: 'image/jpeg' });
+                    const watermarkedUploadResult = await window.dataManager.uploadImageToGitHub(watermarkedFile, watermarkedPath);
+                    if (watermarkedUploadResult.success) {
+                        watermarkedCloudUrl = watermarkedUploadResult.url;
+                        console.log(`水印图片 ${index + 1} 上传成功`);
+                    }
+                    
+                    isCloudSynced = originalUploadResult.success && watermarkedUploadResult.success;
+                    if (isCloudSynced) {
+                        console.log(`图片 ${index + 1} 已成功上传到GitHub云端`);
+                    }
+                } catch (error) {
+                    console.error(`GitHub上传失败 (${index + 1}/${files.length}):`, error);
+                    showErrorMessage(`图片 ${index + 1} 云端上传失败，将保存到本地: ${error.message}`);
+                    // 继续使用本地URL
                 }
             }
-        };
-        
-        reader.onerror = function(error) {
-            console.error('读取文件时出错:', error);
-            processedCount++;
             
-            // 即使出错也要检查是否完成
-            if (processedCount === files.length) {
-                completeUpload().catch(err => {
-                    console.error('完成上传时出错:', err);
-                    showErrorMessage('上传过程中出现错误，请重试');
-                });
-            }
-        };
-        
-        reader.readAsDataURL(file);
-    });
+            const photo = {
+                id: 'photo_' + Date.now() + '_' + index,
+                title: files.length > 1 ? `${title} (${index + 1})` : title,
+                description: description,
+                category: finalCategory,
+                folder: selectedFolder || '', // 添加文件夹信息
+                originalUrl: originalCloudUrl, // 存储原始图片URL（优先云端）
+                watermarkedUrl: watermarkedCloudUrl, // 存储水印图片URL（优先云端）
+                uploadDate: new Date().toISOString(),
+                fileName: file.name,
+                isCloudSynced: isCloudSynced // 标记是否已云端同步
+            };
+            
+            photos.unshift(photo); // 添加到数组开头
+            console.log(`图片 ${index + 1}/${files.length} 处理完成`);
+            
+        } catch (error) {
+            console.error(`处理图片 ${index + 1} 时出错:`, error);
+            showErrorMessage(`图片 ${index + 1} 处理失败: ${error.message}`);
+            // 继续处理下一张图片
+        }
+    }
+    
+    // 所有文件处理完成
+    await completeUpload();
 }
 
 // 完成上传
 async function completeUpload() {
-    // 清除上传超时定时器
-    if (window.uploadTimeout) {
-        clearTimeout(window.uploadTimeout);
-        window.uploadTimeout = null;
-    }
-    
-    // 保存到本地存储
-    await saveData('photographyPhotos', photos);
-    
-    // 如果配置了GitHub，同步数据到云端
-    if (window.githubManager && window.githubManager.isConfigured()) {
+    try {
+        // 清除上传超时定时器
+        if (window.uploadTimeout) {
+            clearTimeout(window.uploadTimeout);
+            window.uploadTimeout = null;
+        }
+        
+        console.log('开始完成上传流程...');
+        
+        // 更新上传按钮状态
+        const uploadBtn = document.getElementById('uploadBtn');
+        uploadBtn.innerHTML = '<span class="loading"></span> 保存中...';
+        
+        // 保存到本地存储
+        console.log('保存数据到本地存储...');
+        await saveData('photographyPhotos', photos);
+        console.log('本地存储保存成功');
+        
+        // 如果配置了GitHub，同步数据到云端
+        if (window.githubManager && window.githubManager.isConfigured()) {
+            try {
+                console.log('同步数据到GitHub云端...');
+                uploadBtn.innerHTML = '<span class="loading"></span> 云端同步中...';
+                await window.dataManager.saveFileToGitHub('data/photos.json', photos);
+                console.log('图片数据已同步到GitHub云端');
+                showSuccessMessage('作品上传并同步到云端成功！');
+            } catch (error) {
+                console.error('同步数据到GitHub失败:', error);
+                showErrorMessage(`云端同步失败: ${error.message}，但图片已保存到本地`);
+            }
+        } else {
+            console.log('GitHub未配置，仅保存到本地');
+            showSuccessMessage('作品上传成功！（仅保存到本地）');
+        }
+        
+        // 强制清除缓存并重新渲染
+        console.log('重新渲染图片展示...');
+        
+        // 清除DataManager缓存
+        if (window.dataManager) {
+            if (window.dataManager.cache) {
+                window.dataManager.cache.photos = null;
+                window.dataManager.cache.lastFetch = null;
+                console.log('已清除DataManager缓存');
+            }
+            
+            // 强制重新加载数据
+            try {
+                const freshPhotos = await window.dataManager.getPhotos();
+                photos = freshPhotos;
+                console.log('已从DataManager重新加载照片数据');
+            } catch (error) {
+                console.error('从DataManager重新加载数据失败:', error);
+                // 降级到本地存储
+                const savedPhotos = JSON.parse(localStorage.getItem('photographyPhotos') || '[]');
+                photos = savedPhotos;
+                console.log('已从本地存储重新加载照片数据');
+            }
+        } else {
+            // 直接从本地存储重新加载
+            const savedPhotos = JSON.parse(localStorage.getItem('photographyPhotos') || '[]');
+            photos = savedPhotos;
+            console.log('已从本地存储重新加载照片数据');
+        }
+        
+        // 重新渲染图片展示
+        renderGallery();
+        
+        // 重置表单
+        document.getElementById('imageTitle').value = '';
+        document.getElementById('imageDescription').value = '';
+        document.getElementById('imageCategory').value = 'portrait';
+        document.getElementById('customCategory').value = '';
+        document.getElementById('customCategoryGroup').style.display = 'none';
+        document.getElementById('folderSelect').value = '';
+        document.getElementById('newFolderGroup').style.display = 'none';
+        document.getElementById('newFolderName').value = '';
+        
+        // 隐藏文件计数
+        const fileCountDiv = document.getElementById('fileCount');
+        if (fileCountDiv) {
+            fileCountDiv.style.display = 'none';
+            fileCountDiv.textContent = '';
+        }
+        
+        // 重置上传区域
+        const uploadArea = document.getElementById('uploadArea');
+        uploadArea.innerHTML = `
+            <div class="upload-content">
+                <div class="upload-icon">📷</div>
+                <p>点击或拖拽图片到这里上传</p>
+            </div>
+        `;
+        
+        // 重置按钮
+        uploadBtn.innerHTML = '上传作品';
+        uploadBtn.disabled = false;
+        
+        // 清除选中的文件
+        window.selectedFiles = null;
+        document.getElementById('imageInput').value = '';
+        
+        console.log('上传流程完成');
+        
+    } catch (error) {
+        console.error('完成上传时出错:', error);
+        
+        // 重置上传按钮
+        const uploadBtn = document.getElementById('uploadBtn');
+        uploadBtn.innerHTML = '上传作品';
+        uploadBtn.disabled = false;
+        
+        // 显示错误消息
+        showErrorMessage(`上传完成时出错: ${error.message}`);
+        
+        // 尝试重新渲染以显示可能已保存的图片
         try {
-            await window.dataManager.saveFileToGitHub('data/photos.json', photos);
-            console.log('图片数据已同步到GitHub云端');
-        } catch (error) {
-            console.error('同步数据到GitHub失败:', error);
+            renderGallery();
+        } catch (renderError) {
+            console.error('重新渲染时出错:', renderError);
         }
     }
-    
-    // 重新渲染图片展示
-    renderGallery();
-    
-    // 重置表单
-    document.getElementById('imageTitle').value = '';
-    document.getElementById('imageDescription').value = '';
-    document.getElementById('imageCategory').value = 'portrait';
-    document.getElementById('customCategory').value = '';
-    document.getElementById('customCategoryGroup').style.display = 'none';
-    document.getElementById('folderSelect').value = '';
-    document.getElementById('newFolderGroup').style.display = 'none';
-    document.getElementById('newFolderName').value = '';
-    
-    // 隐藏文件计数
-    const fileCountDiv = document.getElementById('fileCount');
-    if (fileCountDiv) {
-        fileCountDiv.style.display = 'none';
-        fileCountDiv.textContent = '';
-    }
-    
-    // 重置上传区域
-    const uploadArea = document.getElementById('uploadArea');
-    uploadArea.innerHTML = `
-        <div class="upload-content">
-            <div class="upload-icon">📷</div>
-            <p>点击或拖拽图片到这里上传</p>
-        </div>
-    `;
-    
-    // 重置按钮
-    const uploadBtn = document.getElementById('uploadBtn');
-    uploadBtn.innerHTML = '上传作品';
-    uploadBtn.disabled = false;
-    
-    // 显示成功消息
-    showSuccessMessage('作品上传成功！');
-    
-    // 清除选中的文件
-    window.selectedFiles = null;
-    document.getElementById('imageInput').value = '';
 }
 
 // 记事本功能

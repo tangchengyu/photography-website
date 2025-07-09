@@ -21,6 +21,10 @@ class DataManager {
             about: null
         };
         
+        // 缓存过期时间（毫秒）
+        this.cacheExpiry = 5 * 60 * 1000; // 5分钟
+        this.cacheTimestamps = {};
+        
         // 初始化
         this.init();
     }
@@ -32,6 +36,41 @@ class DataManager {
         } else {
             console.warn('GitHub管理器未找到，仅支持本地存储');
         }
+    }
+    
+    // 清除所有缓存
+    clearCache() {
+        this.cache = {
+            photos: null,
+            notes: null,
+            categories: null,
+            folders: null,
+            about: null
+        };
+        this.cacheTimestamps = {};
+        console.log('数据缓存已清除');
+    }
+    
+    // 清除特定类型的缓存
+    clearCacheByType(type) {
+        if (this.cache.hasOwnProperty(type)) {
+            this.cache[type] = null;
+            delete this.cacheTimestamps[type];
+            console.log(`${type}缓存已清除`);
+        }
+    }
+    
+    // 检查缓存是否过期
+    isCacheExpired(type) {
+        if (!this.cacheTimestamps[type]) {
+            return true;
+        }
+        return Date.now() - this.cacheTimestamps[type] > this.cacheExpiry;
+    }
+    
+    // 设置缓存时间戳
+    setCacheTimestamp(type) {
+        this.cacheTimestamps[type] = Date.now();
     }
     
     // 获取GitHub管理器
@@ -178,16 +217,22 @@ class DataManager {
     
     // 获取照片数据
     async getPhotos() {
-        if (this.cache.photos) {
+        // 检查缓存是否有效且未过期
+        if (this.cache.photos && !this.isCacheExpired('photos')) {
             return this.cache.photos;
         }
         
         let photos = [];
         
-        if (this.useCloudStorage) {
-            const cloudData = await this.getFileFromGitHub(this.dataFiles.photos);
-            if (cloudData) {
-                photos = cloudData;
+        if (this.isGitHubConfigured()) {
+            try {
+                const cloudData = await this.getFileFromGitHub(this.dataFiles.photos);
+                if (cloudData && Array.isArray(cloudData)) {
+                    photos = cloudData;
+                    console.log('从GitHub加载照片数据成功');
+                }
+            } catch (error) {
+                console.warn('从GitHub加载照片数据失败:', error);
             }
         }
         
@@ -195,26 +240,49 @@ class DataManager {
         if (photos.length === 0) {
             const localData = localStorage.getItem('photographyPhotos');
             if (localData) {
-                photos = JSON.parse(localData);
+                try {
+                    photos = JSON.parse(localData);
+                    console.log('从本地存储加载照片数据');
+                } catch (error) {
+                    console.error('解析本地照片数据失败:', error);
+                    photos = [];
+                }
             }
         }
         
+        // 更新缓存和时间戳
         this.cache.photos = photos;
+        this.setCacheTimestamp('photos');
         return photos;
     }
     
     // 保存照片数据
     async savePhotos(photos) {
-        this.cache.photos = photos;
-        
-        // 始终保存到localStorage作为备份
-        localStorage.setItem('photographyPhotos', JSON.stringify(photos));
-        
-        if (this.useCloudStorage) {
-            await this.saveFileToGitHub(this.dataFiles.photos, photos);
+        try {
+            // 更新缓存
+            this.cache.photos = photos;
+            this.setCacheTimestamp('photos');
+            
+            // 始终保存到localStorage作为备份
+            localStorage.setItem('photographyPhotos', JSON.stringify(photos));
+            console.log('照片数据已保存到本地存储');
+            
+            // 如果配置了GitHub，同步到云端
+            if (this.isGitHubConfigured()) {
+                try {
+                    await this.saveFileToGitHub(this.dataFiles.photos, photos);
+                    console.log('照片数据已同步到GitHub');
+                } catch (error) {
+                    console.error('同步照片数据到GitHub失败:', error);
+                    throw error;
+                }
+            }
+            
+            return true;
+        } catch (error) {
+            console.error('保存照片数据失败:', error);
+            throw error;
         }
-        
-        return true;
     }
     
     // 获取记事本数据

@@ -168,7 +168,7 @@ class GitHubManager {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒超时
             
-            response = await fetch(
+            const response = await fetch(
                 `${this.baseUrl}/repos/${this.owner}/${this.repo}/contents/${path}`,
                 {
                     method: 'PUT',
