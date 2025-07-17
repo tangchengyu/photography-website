@@ -683,8 +683,8 @@ function updateFolderSelect() {
         currentCategory = getCurrentActiveCategory();
     }
     
-    // 清空现有选项（保留默认选项）
-    folderSelect.innerHTML = '<option value="">默认文件夹</option>';
+    // 清空现有选项
+    folderSelect.innerHTML = '<option value="" disabled selected>请选择或新建文件夹</option>';
     
     // 添加当前分类下的文件夹
     let categoryFolders;
@@ -1394,24 +1394,7 @@ function renderFolderView() {
         categoryFolders = categoryFolders.filter(folder => folder.category !== 'love');
     }
     
-    // 添加默认文件夹（如果当前分类下有没有指定文件夹的图片）
-    const hasDefaultFolderPhotos = photos.some(photo => {
-        const matchesCategory = currentCategory === 'all' || photo.category === currentCategory;
-        const hasNoFolder = !photo.folder;
-        const isVisible = isAdmin || (photo.category !== 'love' && 
-            (!photo.category.startsWith('custom_') || 
-             customCategories.find(cat => cat.id === photo.category)?.guestVisible !== false));
-        return matchesCategory && hasNoFolder && isVisible;
-    });
-    
-    if (hasDefaultFolderPhotos) {
-        categoryFolders.unshift({
-            id: '',
-            name: '默认文件夹',
-            category: currentCategory,
-            isDefault: true
-        });
-    }
+    // 不再支持默认文件夹，所有图片都必须有文件夹
     
     if (categoryFolders.length === 0) {
         galleryGrid.innerHTML = `
@@ -1428,7 +1411,7 @@ function renderFolderView() {
         // 计算文件夹内的图片数量
         const photoCount = photos.filter(photo => {
             const matchesCategory = currentCategory === 'all' || photo.category === currentCategory;
-            const matchesFolder = folder.isDefault ? !photo.folder : photo.folder === folder.id;
+            const matchesFolder = photo.folder === folder.id;
             const isVisible = isAdmin || (photo.category !== 'love' && 
                 (!photo.category.startsWith('custom_') || 
                  customCategories.find(cat => cat.id === photo.category)?.guestVisible !== false));
@@ -1437,7 +1420,7 @@ function renderFolderView() {
         
         return `
             <div class="gallery-item folder-item" data-folder-id="${folder.id}" onclick="openFolder('${folder.id}')">
-                ${isAdmin && !folder.isDefault ? `
+                ${isAdmin ? `
                     <div class="folder-actions">
                         <button class="action-btn delete-folder-btn" onclick="event.stopPropagation(); deleteFolder('${folder.id}')" title="删除文件夹">🗑️</button>
                     </div>
@@ -1466,12 +1449,7 @@ function renderPhotoView(filteredPhotos = null) {
     
     // 如果指定了文件夹，只显示该文件夹下的图片
     if (currentSelectedFolder !== null) {
-        if (currentSelectedFolder === '') {
-            // 默认文件夹
-            photosToShow = photosToShow.filter(photo => !photo.folder);
-        } else {
-            photosToShow = photosToShow.filter(photo => photo.folder === currentSelectedFolder);
-        }
+        photosToShow = photosToShow.filter(photo => photo.folder === currentSelectedFolder);
     }
     
     // 如果不是管理员，过滤掉恋爱空间分类和不可见的自定义分类图片
@@ -1492,7 +1470,7 @@ function renderPhotoView(filteredPhotos = null) {
     }
     
     if (photosToShow.length === 0) {
-        const folderName = currentSelectedFolder ? getFolderDisplayName(currentSelectedFolder) || '默认文件夹' : '';
+        const folderName = currentSelectedFolder ? getFolderDisplayName(currentSelectedFolder) : '';
         galleryGrid.innerHTML = `
             <div class="empty-state" style="grid-column: 1 / -1;">
                 <div class="empty-state-icon">📷</div>
@@ -1592,10 +1570,8 @@ function filterGallery(category, folderId = null) {
     // 按文件夹筛选
     if (folderId) {
         filtered = filtered.filter(photo => photo.folder === folderId);
-    } else if (folderId === '') {
-        // 显示没有文件夹的图片（默认文件夹）
-        filtered = filtered.filter(photo => !photo.folder);
     }
+    // 注意：不再支持默认文件夹，所有图片都必须有文件夹
     
     renderGallery(filtered);
 }
@@ -1656,11 +1632,11 @@ function getCategoryDisplayName(category) {
 // 获取文件夹显示名称
 function getFolderDisplayName(folderId) {
     if (!folderId) {
-        return null; // 默认文件夹不显示名称
+        return '未知文件夹'; // 所有图片都应该有文件夹
     }
     
     const folder = folders.find(f => f.id === folderId);
-    return folder ? folder.name : null;
+    return folder ? folder.name : '未知文件夹';
 }
 
 // 更新分类按钮
@@ -2106,6 +2082,11 @@ async function uploadImages() {
         return;
     }
     
+    if (!selectedFolder) {
+        alert('请选择一个文件夹或新建文件夹！');
+        return;
+    }
+    
     let finalCategory = category;
     let categoryDisplayName = getCategoryDisplayName(category);
     
@@ -2212,9 +2193,7 @@ async function uploadImages() {
                     const categoryDisplayName = getCategoryDisplayName(finalCategory);
                     // 只保留字母、数字、中文和下划线，不进行URL编码（GitHub API不需要）
                     const categoryPath = categoryDisplayName.replace(/[^a-zA-Z0-9\u4e00-\u9fa5_-]/g, '_');
-                    const folderPath = selectedFolder ? 
-                        selectedFolder.replace(/[^a-zA-Z0-9\u4e00-\u9fa5_-]/g, '_') : 
-                        'default';
+                    const folderPath = selectedFolder.replace(/[^a-zA-Z0-9\u4e00-\u9fa5_-]/g, '_');
                     
                     const originalPath = `images/${categoryPath}/${folderPath}/original/${originalFileName}`;
                     const watermarkedPath = `images/${categoryPath}/${folderPath}/watermarked/${watermarkedFileName}`;
@@ -2277,7 +2256,7 @@ async function uploadImages() {
                 title: files.length > 1 ? `${title} (${index + 1})` : title,
                 description: description,
                 category: finalCategory,
-                folder: selectedFolder || '', // 添加文件夹信息
+                folder: selectedFolder, // 添加文件夹信息
                 originalUrl: originalCloudUrl, // 存储原始图片URL（优先云端）
                 watermarkedUrl: watermarkedCloudUrl, // 存储水印图片URL（优先云端）
                 uploadDate: new Date().toISOString(),
