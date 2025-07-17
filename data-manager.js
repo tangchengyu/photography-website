@@ -705,9 +705,15 @@ class DataManager {
         
         // 首先尝试从about.json文件加载数据
         try {
-            const response = await fetch('./data/about.json');
+            const response = await fetch('./data/about.json', {
+                headers: {
+                    'Accept': 'application/json; charset=utf-8',
+                    'Content-Type': 'application/json; charset=utf-8'
+                }
+            });
             if (response.ok) {
-                const jsonData = await response.json();
+                const text = await response.text();
+                const jsonData = JSON.parse(text);
                 if (jsonData && Object.keys(jsonData).length > 0) {
                     aboutInfo = jsonData;
                     console.log('从about.json文件加载关于我数据成功');

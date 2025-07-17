@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>编码测试</title>
+</head>
+<body>
+    <h1>编码测试页面</h1>
+    <div id="result"></div>
+    
+    <script>
+        async function testEncoding() {
+            try {
+                const response = await fetch('./data/about.json', {
+                    headers: {
+                        'Accept': 'application/json; charset=utf-8',
+                        'Content-Type': 'application/json; charset=utf-8'
+                    }
+                });
+                
+                if (response.ok) {
+                    const text = await response.text();
+                    console.log('Raw text:', text);
+                    
+                    const jsonData = JSON.parse(text);
+                    console.log('Parsed JSON:', jsonData);
+                    
+                    document.getElementById('result').innerHTML = `
+                        <h2>测试结果:</h2>
+                        <p><strong>姓名:</strong> ${jsonData.name}</p>
+                        <p><strong>描述:</strong> ${jsonData.description}</p>
+                        <p><strong>微信:</strong> ${jsonData.contacts.wechat}</p>
+                        <p><strong>QQ:</strong> ${jsonData.contacts.qq}</p>
+                        <p><strong>邮箱:</strong> ${jsonData.contacts.email}</p>
+                    `;
+                } else {
+                    document.getElementById('result').innerHTML = '<p>加载失败</p>';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('result').innerHTML = '<p>错误: ' + error.message + '</p>';
+            }
+        }
+        
+        // 页面加载完成后执行测试
+        document.addEventListener('DOMContentLoaded', testEncoding);
+    </script>
+</body>
+</html>
