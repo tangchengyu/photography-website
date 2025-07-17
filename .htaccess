@@ -1,0 +1,22 @@
+# 设置默认字符编码为UTF-8
+AddDefaultCharset UTF-8
+
+# 为HTML文件设置字符编码
+<FilesMatch "\.(html|htm)$">
+    Header set Content-Type "text/html; charset=UTF-8"
+</FilesMatch>
+
+# 为CSS文件设置字符编码
+<FilesMatch "\.(css)$">
+    Header set Content-Type "text/css; charset=UTF-8"
+</FilesMatch>
+
+# 为JavaScript文件设置字符编码
+<FilesMatch "\.(js)$">
+    Header set Content-Type "application/javascript; charset=UTF-8"
+</FilesMatch>
+
+# 为JSON文件设置字符编码
+<FilesMatch "\.(json)$">
+    Header set Content-Type "application/json; charset=UTF-8"
+</FilesMatch>
