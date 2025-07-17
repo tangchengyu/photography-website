@@ -713,7 +713,6 @@ class DataManager {
                 }
             });
             if (response && response.ok) {
-                const text = await response.text();
                 const jsonData = await response.json();
                 if (jsonData && Object.keys(jsonData).length > 0) {
                     aboutInfo = jsonData;
