@@ -83,6 +83,26 @@ let currentViewMode = 'folder'; // 'folder' 或 'photo'
 let currentSelectedFolder = null; // 当前选中的文件夹ID
 let currentCategory = 'all'; // 当前选中的分类
 
+// 全局错误处理
+window.addEventListener('error', function(event) {
+    console.error('全局错误:', event.error);
+    if (event.error && event.error.message) {
+        if (event.error.message.includes('GitHub') || event.error.message.includes('上传')) {
+            showNotification('上传过程中出现错误，请检查网络连接后重试', 'error');
+        }
+    }
+});
+
+window.addEventListener('unhandledrejection', function(event) {
+    console.error('未处理的Promise拒绝:', event.reason);
+    if (event.reason && event.reason.message) {
+        if (event.reason.message.includes('GitHub') || event.reason.message.includes('上传')) {
+            showNotification('上传过程中出现错误，请检查网络连接后重试', 'error');
+            event.preventDefault(); // 防止错误在控制台显示
+        }
+    }
+});
+
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', async function() {
     showLoginModal();
@@ -2182,21 +2202,29 @@ async function uploadImages() {
             // 如果配置了GitHub，尝试上传到云端
             if (window.githubManager && window.githubManager.isConfigured()) {
                 try {
-                    // 生成文件路径
-                    const timestamp = Date.now();
-                    const originalFileName = `original_${timestamp}_${index}_${file.name}`;
-                    const watermarkedFileName = `watermarked_${timestamp}_${index}_${file.name}`;
+                    // 生成唯一的时间戳，避免并发冲突
+                    const timestamp = Date.now() + Math.random().toString(36).substr(2, 9);
+                    const safeFileName = file.name.replace(/[^a-zA-Z0-9\u4e00-\u9fa5._-]/g, '_');
+                    const originalFileName = `original_${timestamp}_${index}_${safeFileName}`;
+                    const watermarkedFileName = `watermarked_${timestamp}_${index}_${safeFileName}`;
                     
                     // 处理中文字符，确保GitHub API和Pages都能正确访问
                     const categoryDisplayName = getCategoryDisplayName(finalCategory);
                     // 只保留字母、数字、中文和下划线，不进行URL编码（GitHub API不需要）
-                    const categoryPath = categoryDisplayName.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_');
+                    const categoryPath = categoryDisplayName.replace(/[^a-zA-Z0-9\u4e00-\u9fa5_-]/g, '_');
                     const folderPath = selectedFolder ? 
-                        selectedFolder.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_') : 
+                        selectedFolder.replace(/[^a-zA-Z0-9\u4e00-\u9fa5_-]/g, '_') : 
                         'default';
                     
                     const originalPath = `images/${categoryPath}/${folderPath}/original/${originalFileName}`;
                     const watermarkedPath = `images/${categoryPath}/${folderPath}/watermarked/${watermarkedFileName}`;
+                    
+                    console.log(`开始上传图片 ${index + 1}/${files.length} 到云端...`);
+                    
+                    // 添加延迟以避免并发冲突
+                    if (index > 0) {
+                        await new Promise(resolve => setTimeout(resolve, 500 * index));
+                    }
                     
                     // 上传原始图片
                     console.log(`正在上传原始图片 ${index + 1}/${files.length}...`);
@@ -2204,6 +2232,8 @@ async function uploadImages() {
                     if (originalUploadResult.success) {
                         originalCloudUrl = originalUploadResult.url;
                         console.log(`原始图片 ${index + 1} 上传成功`);
+                    } else {
+                        throw new Error('原始图片上传失败');
                     }
                     
                     // 将水印图片转换为文件并上传
@@ -2214,6 +2244,8 @@ async function uploadImages() {
                     if (watermarkedUploadResult.success) {
                         watermarkedCloudUrl = watermarkedUploadResult.url;
                         console.log(`水印图片 ${index + 1} 上传成功`);
+                    } else {
+                        throw new Error('水印图片上传失败');
                     }
                     
                     isCloudSynced = originalUploadResult.success && watermarkedUploadResult.success;
@@ -2222,7 +2254,20 @@ async function uploadImages() {
                     }
                 } catch (error) {
                     console.error(`GitHub上传失败 (${index + 1}/${files.length}):`, error);
-                    showNotification(`图片 ${index + 1} 云端上传失败，将保存到本地: ${error.message}`, 'warning');
+                    
+                    // 根据错误类型提供不同的提示
+                    let errorMessage = `图片 ${index + 1} 云端上传失败，将保存到本地`;
+                    if (error.message.includes('timeout') || error.message.includes('网络')) {
+                        errorMessage += ': 网络连接超时，请检查网络状态';
+                    } else if (error.message.includes('409')) {
+                        errorMessage += ': 文件冲突，请稍后重试';
+                    } else if (error.message.includes('403')) {
+                        errorMessage += ': 权限不足，请检查GitHub配置';
+                    } else {
+                        errorMessage += `: ${error.message}`;
+                    }
+                    
+                    showNotification(errorMessage, 'warning');
                     // 继续使用本地URL
                 }
             }

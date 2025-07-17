@@ -208,24 +208,59 @@ class DataManager {
             return false;
         }
         
-        try {
-            // 获取现有文件的SHA（如果存在）
-            const existingFile = await manager.getFile(filename);
-            const sha = existingFile ? existingFile.sha : null;
-            
-            // 保存文件
-            const content = JSON.stringify(data, null, 2);
-            const message = `更新${filename} - ${new Date().toLocaleString()}`;
-            
-            await manager.createOrUpdateFile(filename, content, message, sha);
-            
-            console.log(`${filename}已成功保存到GitHub`);
-            return true;
-            
-        } catch (error) {
-            console.error(`保存${filename}到GitHub失败:`, error);
-            return false;
+        // 添加重试机制
+        const maxRetries = 3;
+        let lastError = null;
+        
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                console.log(`尝试保存文件到GitHub (${attempt}/${maxRetries}):`, filename);
+                
+                // 获取现有文件的SHA（如果存在）
+                let sha = null;
+                try {
+                    const existingFile = await manager.getFile(filename);
+                    sha = existingFile ? existingFile.sha : null;
+                    console.log('文件检查结果:', existingFile ? '文件已存在' : '文件不存在');
+                } catch (error) {
+                    // 文件不存在是正常的，继续创建新文件
+                    console.log('文件不存在，将创建新文件:', filename);
+                }
+                
+                // 保存文件
+                const content = JSON.stringify(data, null, 2);
+                const message = `更新${filename} - ${new Date().toLocaleString()}`;
+                
+                await manager.createOrUpdateFile(filename, content, message, sha);
+                
+                console.log(`${filename}已成功保存到GitHub (${attempt}/${maxRetries})`);
+                return true;
+                
+            } catch (error) {
+                lastError = error;
+                console.error(`保存文件尝试 ${attempt}/${maxRetries} 失败:`, error.message);
+                
+                // 如果是网络相关错误且还有重试机会，继续重试
+                if (attempt < maxRetries && (
+                    error.message.includes('timeout') || 
+                    error.message.includes('网络') || 
+                    error.message.includes('连接') ||
+                    error.message.includes('409') || // 冲突错误
+                    error.message.includes('502') || // 网关错误
+                    error.message.includes('503')    // 服务不可用
+                )) {
+                    console.log(`将在 ${1000 * attempt}ms 后重试保存文件...`);
+                    await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // 递增延迟
+                    continue;
+                }
+                
+                // 如果不是可重试的错误，或者已经达到最大重试次数，跳出循环
+                break;
+            }
         }
+        
+        console.error(`保存${filename}到GitHub最终失败:`, lastError);
+        return false;
     }
     
     // 上传图片文件到GitHub
@@ -249,52 +284,87 @@ class DataManager {
             throw new Error('GitHub未配置，无法上传图片');
         }
         
-        try {
-            // 将文件转换为base64
-            const base64Content = await this.fileToBase64(file);
-            
-            // 检查文件是否已存在
-            console.log('检查文件是否存在:', path);
-            let existingFile = null;
-            let sha = null;
-            
+        // 添加重试机制
+        const maxRetries = 3;
+        let lastError = null;
+        
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
             try {
-                existingFile = await manager.getFile(path);
-                sha = existingFile ? existingFile.sha : null;
-                console.log('文件检查结果:', existingFile ? '文件已存在' : '文件不存在');
-            } catch (error) {
-                console.log('检查文件时出错:', error.message);
-                // 如果是404错误，说明文件不存在，这是正常的
-                if (error.message.includes('404') || error.message.includes('不存在')) {
-                    console.log('文件不存在，将创建新文件');
-                    existingFile = null;
-                    sha = null;
-                } else {
-                    // 其他错误需要抛出
-                    throw error;
+                console.log(`尝试上传 (${attempt}/${maxRetries}):`, path);
+                
+                // 将文件转换为base64
+                const base64Content = await this.fileToBase64(file);
+                
+                // 检查文件是否已存在
+                console.log('检查文件是否存在:', path);
+                let existingFile = null;
+                let sha = null;
+                
+                try {
+                    existingFile = await manager.getFile(path);
+                    sha = existingFile ? existingFile.sha : null;
+                    console.log('文件检查结果:', existingFile ? '文件已存在' : '文件不存在');
+                } catch (error) {
+                    console.log('检查文件时出错:', error.message);
+                    // 如果是404错误，说明文件不存在，这是正常的
+                    if (error.message.includes('404') || error.message.includes('不存在')) {
+                        console.log('文件不存在，将创建新文件');
+                        existingFile = null;
+                        sha = null;
+                    } else {
+                        // 其他错误，如果是网络问题，可以重试
+                        if (attempt < maxRetries && (error.message.includes('timeout') || error.message.includes('网络') || error.message.includes('连接'))) {
+                            console.warn(`检查文件失败，将重试 (${attempt}/${maxRetries}):`, error.message);
+                            lastError = error;
+                            await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // 递增延迟
+                            continue;
+                        }
+                        throw error;
+                    }
                 }
+                
+                // 上传文件到GitHub
+                const message = `上传图片: ${file.name} - ${new Date().toLocaleString()}`;
+                const result = await manager.createOrUpdateFile(path, base64Content, message, sha);
+                
+                // 返回GitHub Pages的访问URL
+                const baseUrl = manager.getGitHubPagesUrl();
+                // 对路径进行URL编码，确保中文字符能正确访问
+                const encodedPath = path.split('/').map(segment => encodeURIComponent(segment)).join('/');
+                const githubPagesUrl = baseUrl + (baseUrl.endsWith('/') ? '' : '/') + encodedPath;
+                
+                console.log(`图片上传成功 (${attempt}/${maxRetries}):`, path);
+                return {
+                    success: true,
+                    url: githubPagesUrl,
+                    downloadUrl: result.content?.download_url
+                };
+                
+            } catch (error) {
+                lastError = error;
+                console.error(`上传尝试 ${attempt}/${maxRetries} 失败:`, error.message);
+                
+                // 如果是网络相关错误且还有重试机会，继续重试
+                if (attempt < maxRetries && (
+                    error.message.includes('timeout') || 
+                    error.message.includes('网络') || 
+                    error.message.includes('连接') ||
+                    error.message.includes('409') || // 冲突错误
+                    error.message.includes('502') || // 网关错误
+                    error.message.includes('503')    // 服务不可用
+                )) {
+                    console.log(`将在 ${1000 * attempt}ms 后重试...`);
+                    await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // 递增延迟
+                    continue;
+                }
+                
+                // 如果不是可重试的错误，或者已经达到最大重试次数，抛出错误
+                break;
             }
-            
-            // 上传文件到GitHub
-            const message = `上传图片: ${file.name} - ${new Date().toLocaleString()}`;
-            const result = await manager.createOrUpdateFile(path, base64Content, message, sha);
-            
-            // 返回GitHub Pages的访问URL
-            const baseUrl = manager.getGitHubPagesUrl();
-            // 对路径进行URL编码，确保中文字符能正确访问
-            const encodedPath = path.split('/').map(segment => encodeURIComponent(segment)).join('/');
-            const githubPagesUrl = baseUrl + (baseUrl.endsWith('/') ? '' : '/') + encodedPath;
-            
-            return {
-                success: true,
-                url: githubPagesUrl,
-                downloadUrl: result.content?.download_url
-            };
-            
-        } catch (error) {
-            console.error('上传图片到GitHub失败:', error);
-            throw error;
         }
+        
+        console.error('上传图片到GitHub最终失败:', lastError);
+        throw lastError || new Error('上传失败，已达到最大重试次数');
     }
 
     

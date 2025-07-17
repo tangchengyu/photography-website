@@ -167,7 +167,15 @@ class GitHubManager {
             }
 
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒超时
+            const timeoutId = setTimeout(() => controller.abort(), 45000); // 增加到45秒超时
+            
+            console.log('发送GitHub API请求:', {
+                path: path,
+                method: 'PUT',
+                hasContent: !!content,
+                contentLength: content ? content.length : 0,
+                hasSha: !!sha
+            });
             
             const response = await fetch(
                 `${this.baseUrl}/repos/${this.owner}/${this.repo}/contents/${path}`,
@@ -180,17 +188,45 @@ class GitHubManager {
             );
             
             clearTimeout(timeoutId);
+            
+            console.log('GitHub API响应状态:', response.status);
 
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(`上传文件失败: ${errorData.message || response.status}`);
+                let errorMessage = `HTTP ${response.status}`;
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.message || errorMessage;
+                    
+                    // 提供更具体的错误信息
+                    if (response.status === 409) {
+                        errorMessage = '文件冲突，可能是并发上传导致的，请稍后重试';
+                    } else if (response.status === 403) {
+                        errorMessage = 'GitHub权限不足，请检查Token权限设置';
+                    } else if (response.status === 422) {
+                        errorMessage = '请求参数无效，可能是文件路径或内容格式问题';
+                    } else if (response.status === 502 || response.status === 503) {
+                        errorMessage = 'GitHub服务暂时不可用，请稍后重试';
+                    }
+                } catch (parseError) {
+                    console.warn('解析错误响应失败:', parseError);
+                }
+                
+                throw new Error(`上传文件失败: ${errorMessage}`);
             }
 
-            return await response.json();
+            const result = await response.json();
+            console.log('文件上传成功:', path);
+            return result;
         } catch (error) {
             if (error.name === 'AbortError') {
                 throw new Error('上传超时，请检查网络连接');
             }
+            
+            // 网络错误的特殊处理
+            if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                throw new Error('网络连接失败，请检查网络状态');
+            }
+            
             throw new Error(`上传文件失败: ${error.message}`);
         }
     }
