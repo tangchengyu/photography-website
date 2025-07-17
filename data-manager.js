@@ -230,6 +230,20 @@ class DataManager {
     
     // 上传图片文件到GitHub
     async uploadImageToGitHub(file, path) {
+        // 参数验证
+        if (!file) {
+            throw new Error('文件参数不能为空');
+        }
+        if (!path || typeof path !== 'string') {
+            throw new Error('路径参数必须是非空字符串');
+        }
+        
+        console.log('开始上传图片到GitHub:', {
+            fileName: file.name,
+            fileSize: file.size,
+            path: path
+        });
+        
         const manager = this.getGitHubManager();
         if (!manager || !manager.isConfigured()) {
             throw new Error('GitHub未配置，无法上传图片');
@@ -240,8 +254,26 @@ class DataManager {
             const base64Content = await this.fileToBase64(file);
             
             // 检查文件是否已存在
-            const existingFile = await manager.getFile(path);
-            const sha = existingFile ? existingFile.sha : null;
+            console.log('检查文件是否存在:', path);
+            let existingFile = null;
+            let sha = null;
+            
+            try {
+                existingFile = await manager.getFile(path);
+                sha = existingFile ? existingFile.sha : null;
+                console.log('文件检查结果:', existingFile ? '文件已存在' : '文件不存在');
+            } catch (error) {
+                console.log('检查文件时出错:', error.message);
+                // 如果是404错误，说明文件不存在，这是正常的
+                if (error.message.includes('404') || error.message.includes('不存在')) {
+                    console.log('文件不存在，将创建新文件');
+                    existingFile = null;
+                    sha = null;
+                } else {
+                    // 其他错误需要抛出
+                    throw error;
+                }
+            }
             
             // 上传文件到GitHub
             const message = `上传图片: ${file.name} - ${new Date().toLocaleString()}`;

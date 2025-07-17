@@ -87,24 +87,55 @@ let currentCategory = 'all'; // 当前选中的分类
 document.addEventListener('DOMContentLoaded', async function() {
     showLoginModal();
     
-    // 等待DataManager初始化完成后再初始化应用
-    if (window.dataManager) {
-        // 等待DataManager初始化完成
-        let retryCount = 0;
-        const maxRetries = 10;
-        
-        while (!window.dataManager.isInitialized && retryCount < maxRetries) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            retryCount++;
-        }
-        
-        if (retryCount >= maxRetries) {
-            console.warn('DataManager初始化超时，继续启动应用');
-        }
-    }
+    // 等待所有管理器初始化完成
+    await waitForManagersInitialization();
     
     await initializeApp();
 });
+
+// 等待管理器初始化完成
+async function waitForManagersInitialization() {
+    console.log('等待管理器初始化...');
+    
+    // 等待GitHubManager初始化
+    let retryCount = 0;
+    const maxRetries = 50; // 增加重试次数
+    
+    while (!window.githubManager && retryCount < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        retryCount++;
+    }
+    
+    if (!window.githubManager) {
+        console.error('GitHubManager初始化失败');
+        return;
+    }
+    
+    // 等待DataManager初始化
+    retryCount = 0;
+    while (!window.dataManager && retryCount < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        retryCount++;
+    }
+    
+    if (!window.dataManager) {
+        console.error('DataManager初始化失败');
+        return;
+    }
+    
+    // 等待DataManager完全初始化
+    retryCount = 0;
+    while (!window.dataManager.isInitialized && retryCount < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        retryCount++;
+    }
+    
+    if (retryCount >= maxRetries) {
+        console.warn('DataManager初始化超时，但继续启动应用');
+    } else {
+        console.log('所有管理器初始化完成');
+    }
+}
 
 // 显示登录模态框
 function showLoginModal() {
@@ -1977,6 +2008,28 @@ async function uploadImages() {
         return;
     }
     
+    // 检查必要的管理器是否已初始化
+    if (!window.dataManager) {
+        showNotification('数据管理器未初始化，请刷新页面重试', 'error');
+        return;
+    }
+    
+    if (!window.dataManager.isInitialized) {
+        showNotification('数据管理器正在初始化中，请稍后重试', 'warning');
+        return;
+    }
+    
+    // 检查必要的函数是否存在
+    if (typeof window.dataManager.uploadImageToGitHub !== 'function') {
+        showNotification('上传功能不可用，请检查配置', 'error');
+        return;
+    }
+    
+    if (typeof window.dataManager.forceRefreshData !== 'function') {
+        showNotification('数据刷新功能不可用，请检查配置', 'error');
+        return;
+    }
+    
     // 设置全局上传超时
     window.uploadTimeout = setTimeout(() => {
         console.error('上传超时，强制完成');
@@ -2134,11 +2187,12 @@ async function uploadImages() {
                     const originalFileName = `original_${timestamp}_${index}_${file.name}`;
                     const watermarkedFileName = `watermarked_${timestamp}_${index}_${file.name}`;
                     
-                    // 对中文字符进行URL编码处理，确保GitHub Pages能正确访问
+                    // 处理中文字符，确保GitHub API和Pages都能正确访问
                     const categoryDisplayName = getCategoryDisplayName(finalCategory);
-                    const categoryPath = encodeURIComponent(categoryDisplayName.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_'));
+                    // 只保留字母、数字、中文和下划线，不进行URL编码（GitHub API不需要）
+                    const categoryPath = categoryDisplayName.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_');
                     const folderPath = selectedFolder ? 
-                        encodeURIComponent(selectedFolder.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_')) : 
+                        selectedFolder.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_') : 
                         'default';
                     
                     const originalPath = `images/${categoryPath}/${folderPath}/original/${originalFileName}`;
