@@ -695,7 +695,7 @@ class DataManager {
         
         let aboutInfo = {
             name: '于果',
-            description: '<p>我是一颗小果子</p>',
+            description: '<p>我是于果manager</p>',
             contacts: {
                 wechat: 'yg12345',
                 qq: '12345',
