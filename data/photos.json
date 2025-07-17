@@ -1,5 +1,29 @@
 [
   {
+    "id": "photo_1752747162036_1",
+    "title": "666 (2)",
+    "description": "",
+    "category": "portrait",
+    "folder": "folder_1752743267454",
+    "originalUrl": "https://tangchengyu.github.io/photography-website/images/%E4%BA%BA%E5%83%8F/folder_1752743267454/original/original_1752747157135maqqts00g_1_maximum_difference.png",
+    "watermarkedUrl": "https://tangchengyu.github.io/photography-website/images/%E4%BA%BA%E5%83%8F/folder_1752743267454/watermarked/watermarked_1752747157135maqqts00g_1_maximum_difference.png",
+    "uploadDate": "2025-07-17T10:12:42.036Z",
+    "fileName": "maximum_difference.png",
+    "isCloudSynced": true
+  },
+  {
+    "id": "photo_1752747157088_0",
+    "title": "666 (1)",
+    "description": "",
+    "category": "portrait",
+    "folder": "folder_1752743267454",
+    "originalUrl": "https://tangchengyu.github.io/photography-website/images/%E4%BA%BA%E5%83%8F/folder_1752743267454/original/original_1752747152966t5elyrr89_0_lr_comparison_training_time.png",
+    "watermarkedUrl": "https://tangchengyu.github.io/photography-website/images/%E4%BA%BA%E5%83%8F/folder_1752743267454/watermarked/watermarked_1752747152966t5elyrr89_0_lr_comparison_training_time.png",
+    "uploadDate": "2025-07-17T10:12:37.088Z",
+    "fileName": "lr_comparison_training_time.png",
+    "isCloudSynced": true
+  },
+  {
     "id": "photo_1752743307166_0",
     "title": "6",
     "description": "",
