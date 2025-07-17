@@ -694,16 +694,28 @@ class DataManager {
         }
         
         let aboutInfo = {
-            name: '于果',
-            description: `<p>热爱摄影的业余爱好者，擅长捕捉生活中的美好瞬间和自然风光。</p>
-<p>我是于果，一名热爱摄影的艺术爱好者。从2015年开始接触摄影，逐渐爱上了通过镜头记录生活，表达情感的方式。我擅长风景、人像和街拍摄影，尤其喜欢捕捉光影变化带来的奇妙效果。</p>
-<p>对我来说，摄影不仅是一种爱好，更是一种生活态度。通过镜头，我能够发现日常生活中被忽略的美，并将其定格成永恒。每一张照片背后都有一个故事，我希望通过我的作品，能让更多人分享我眼中的世界。</p>`,
+            name: 'Default Name',
+            description: '<p>Default description</p>',
             contacts: {
-                wechat: 'yuguo_photo',
-                qq: '123456789',
-                email: 'yuguo@example.com'
+                wechat: 'default_wechat',
+                qq: '000000000',
+                email: 'default@example.com'
             }
         };
+        
+        // 首先尝试从about.json文件加载数据
+        try {
+            const response = await fetch('./data/about.json');
+            if (response.ok) {
+                const jsonData = await response.json();
+                if (jsonData && Object.keys(jsonData).length > 0) {
+                    aboutInfo = jsonData;
+                    console.log('从about.json文件加载关于我数据成功');
+                }
+            }
+        } catch (error) {
+            console.warn('从about.json文件加载数据失败:', error);
+        }
         
         if (this.isGitHubConfigured()) {
             try {
