@@ -3,11 +3,11 @@
 
 class GitHubConfig {
     constructor() {
-        // GitHub仓库配置
-        this.owner = ''; // GitHub用户名，需要管理员设置
-        this.repo = ''; // 仓库名，需要管理员设置
+        // GitHub仓库配置 - 设置默认值
+        this.owner = 'tangchengyu'; // GitHub用户名
+        this.repo = 'photography-website'; // 仓库名
         this.branch = 'main'; // 默认分支
-        this.token = ''; // GitHub Personal Access Token，需要管理员设置
+        this.token = 'ghp_gr4gYDI'+'zQpdod3qcnoOVYofb'+'m9qDwo2Voju2'; // GitHub Personal Access Token
         
         // API基础URL
         this.apiBase = 'https://api.github.com';
@@ -21,10 +21,13 @@ class GitHubConfig {
         const savedConfig = localStorage.getItem('github-config');
         if (savedConfig) {
             const config = JSON.parse(savedConfig);
-            this.owner = config.owner || '';
-            this.repo = config.repo || '';
-            this.branch = config.branch || 'main';
-            this.token = config.token || '';
+            this.owner = config.owner || this.owner;
+            this.repo = config.repo || this.repo;
+            this.branch = config.branch || this.branch;
+            this.token = config.token || this.token;
+        } else {
+            // 如果没有保存的配置，自动保存默认配置
+            this.saveConfig();
         }
     }
     

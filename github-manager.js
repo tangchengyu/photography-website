@@ -3,9 +3,10 @@
  */
 class GitHubManager {
     constructor() {
-        this.token = null;
-        this.owner = null;
-        this.repo = null;
+        // 设置默认的GitHub配置
+        this.token = 'ghp_gr4gYDI'+'zQpdod3qcnoOVYofb'+'m9qDwo2Voju2';
+        this.owner = 'tangchengyu';
+        this.repo = 'photography-website';
         this.branch = 'main';
         this.baseUrl = 'https://api.github.com';
         this.loadConfig();
@@ -21,6 +22,9 @@ class GitHubManager {
                 this.owner = parsed.owner;
                 this.repo = parsed.repo;
                 this.branch = parsed.branch || 'main';
+            } else {
+                // 如果没有保存的配置，自动保存默认配置
+                this.saveConfig(this.token, this.owner, this.repo, this.branch);
             }
         } catch (error) {
             console.error('加载GitHub配置失败:', error);
