@@ -1,5 +1,17 @@
 [
   {
+    "id": "photo_1752743307166_0",
+    "title": "6",
+    "description": "",
+    "category": "portrait",
+    "folder": "folder_1752743267454",
+    "originalUrl": "https://tangchengyu.github.io/photography-website/images/%E4%BA%BA%E5%83%8F/folder_1752743267454/original/original_1752743301833e7uu6i27e_0_average_difference.png",
+    "watermarkedUrl": "https://tangchengyu.github.io/photography-website/images/%E4%BA%BA%E5%83%8F/folder_1752743267454/watermarked/watermarked_1752743301833e7uu6i27e_0_average_difference.png",
+    "uploadDate": "2025-07-17T09:08:27.166Z",
+    "fileName": "average_difference.png",
+    "isCloudSynced": true
+  },
+  {
     "id": "photo_1752739752926_0",
     "title": "666",
     "description": "",
@@ -11,5 +23,4 @@
     "fileName": "sample_75721_comparison.png",
     "isCloudSynced": true
   }
-
 ]
