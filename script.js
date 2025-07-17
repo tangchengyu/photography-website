@@ -411,10 +411,11 @@ function checkGitHubConfigStatus() {
         return;
     }
     
-    if (!window.githubManager.isConfigured()) {
+    // 只在管理员模式下检查并显示GitHub配置提示
+    if (isAdmin && !window.githubManager.isConfigured()) {
         // 显示GitHub配置提示
         showGitHubConfigNotification();
-    } else {
+    } else if (window.githubManager.isConfigured()) {
         console.log('GitHub已配置，支持云端同步');
     }
 }
