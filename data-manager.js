@@ -705,17 +705,17 @@ class DataManager {
         
         // 首先尝试从about.json文件加载数据
         try {
-            const response = await fetch('./data/about.json', {
-                headers: {
-                    'Accept': 'application/json; charset=utf-8',
-                    'Content-Type': 'application/json; charset=utf-8'
-                }
-            });
-            if (response.ok) {
+            // 使用强制UTF-8编码的fetch函数
+            const response = await window.fetchUTF8('./data/about.json');
+            if (response && response.ok) {
                 const text = await response.text();
-                const jsonData = JSON.parse(text);
+                // 检测并修复可能的乱码
+                const cleanText = window.fixGarbledText(text);
+                // 使用专门的UTF-8 JSON解析函数
+                const jsonData = window.parseUTF8JSON(cleanText);
                 if (jsonData && Object.keys(jsonData).length > 0) {
-                    aboutInfo = jsonData;
+                    // 批量处理所有字符串字段，确保UTF-8编码正确
+                    aboutInfo = window.sanitizeObjectUTF8(jsonData);
                     console.log('从about.json文件加载关于我数据成功');
                 }
             }

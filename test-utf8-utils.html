@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta http-equiv="Content-Language" content="zh-CN">
+    <title>UTF-8编码工具测试页面</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-title {
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .test-result {
+            background: #f8f9fa;
+            padding: 10px;
+            border-left: 4px solid #007bff;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+        .success {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+        .error {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        #testOutput {
+            min-height: 100px;
+            border: 1px solid #ddd;
+            padding: 10px;
+            background: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>UTF-8编码处理工具函数测试</h1>
+    
+    <div class="test-section">
+        <h2 class="test-title">1. 基础UTF-8处理测试</h2>
+        <button onclick="testBasicUTF8()">测试基础UTF-8函数</button>
+        <div id="basicTest" class="test-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2 class="test-title">2. JSON解析测试</h2>
+        <button onclick="testJSONParsing()">测试UTF-8 JSON解析</button>
+        <div id="jsonTest" class="test-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2 class="test-title">3. 对象处理测试</h2>
+        <button onclick="testObjectSanitization()">测试对象UTF-8处理</button>
+        <div id="objectTest" class="test-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2 class="test-title">4. 乱码检测和修复测试</h2>
+        <button onclick="testGarbledTextDetection()">测试乱码检测</button>
+        <div id="garbledTest" class="test-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2 class="test-title">5. 存储功能测试</h2>
+        <button onclick="testStorageFunctions()">测试UTF-8存储</button>
+        <div id="storageTest" class="test-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2 class="test-title">6. 网络请求测试</h2>
+        <button onclick="testNetworkFunctions()">测试UTF-8网络请求</button>
+        <div id="networkTest" class="test-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2 class="test-title">7. 浏览器兼容性测试</h2>
+        <button onclick="testBrowserCompatibility()">测试浏览器兼容性</button>
+        <div id="browserTest" class="test-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2 class="test-title">测试输出</h2>
+        <div id="testOutput"></div>
+    </div>
+    
+    <script src="./encoding-utils.js"></script>
+    <script>
+        function log(message, type = 'info') {
+            const output = document.getElementById('testOutput');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.innerHTML = `[${timestamp}] ${message}`;
+            logEntry.className = type;
+            output.appendChild(logEntry);
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        function testBasicUTF8() {
+            const testDiv = document.getElementById('basicTest');
+            try {
+                // 测试中文字符
+                const testString = '你好世界！这是一个测试字符串。';
+                const ensuredString = window.ensureUTF8 ? window.ensureUTF8(testString) : testString;
+                
+                // 测试DOM内容设置
+                const testElement = document.createElement('div');
+                if (window.setUTF8Content) {
+                    window.setUTF8Content(testElement, testString);
+                } else {
+                    testElement.textContent = testString;
+                }
+                
+                testDiv.innerHTML = `
+                    <div class="success">
+                        ✅ 基础UTF-8测试通过<br>
+                        原始字符串: ${testString}<br>
+                        处理后字符串: ${ensuredString}<br>
+                        DOM内容: ${testElement.textContent}
+                    </div>
+                `;
+                log('基础UTF-8测试通过', 'success');
+            } catch (error) {
+                testDiv.innerHTML = `<div class="error">❌ 基础UTF-8测试失败: ${error.message}</div>`;
+                log(`基础UTF-8测试失败: ${error.message}`, 'error');
+            }
+        }
+        
+        function testJSONParsing() {
+            const testDiv = document.getElementById('jsonTest');
+            try {
+                const testJSON = '{"name":"于果","description":"我是一颗小果子","wechat":"yuguo_photo"}';
+                
+                let parsedData;
+                if (window.parseUTF8JSON) {
+                    parsedData = window.parseUTF8JSON(testJSON);
+                } else {
+                    parsedData = JSON.parse(testJSON);
+                }
+                
+                testDiv.innerHTML = `
+                    <div class="success">
+                        ✅ JSON解析测试通过<br>
+                        解析结果: ${JSON.stringify(parsedData, null, 2)}
+                    </div>
+                `;
+                log('JSON解析测试通过', 'success');
+            } catch (error) {
+                testDiv.innerHTML = `<div class="error">❌ JSON解析测试失败: ${error.message}</div>`;
+                log(`JSON解析测试失败: ${error.message}`, 'error');
+            }
+        }
+        
+        function testObjectSanitization() {
+            const testDiv = document.getElementById('objectTest');
+            try {
+                const testObject = {
+                    name: '于果',
+                    description: '我是一颗小果子',
+                    contacts: {
+                        wechat: 'yuguo_photo',
+                        qq: '123456789'
+                    },
+                    tags: ['摄影', '旅行', '生活']
+                };
+                
+                let sanitizedObject;
+                if (window.sanitizeObjectUTF8) {
+                    sanitizedObject = window.sanitizeObjectUTF8(testObject);
+                } else {
+                    sanitizedObject = testObject;
+                }
+                
+                testDiv.innerHTML = `
+                    <div class="success">
+                        ✅ 对象处理测试通过<br>
+                        处理结果: <pre>${JSON.stringify(sanitizedObject, null, 2)}</pre>
+                    </div>
+                `;
+                log('对象处理测试通过', 'success');
+            } catch (error) {
+                testDiv.innerHTML = `<div class="error">❌ 对象处理测试失败: ${error.message}</div>`;
+                log(`对象处理测试失败: ${error.message}`, 'error');
+            }
+        }
+        
+        function testGarbledTextDetection() {
+            const testDiv = document.getElementById('garbledTest');
+            try {
+                const normalText = '正常的中文文本';
+                const garbledText = '\uFFFD\uFFFD乱码文本??';
+                
+                let normalDetected = false;
+                let garbledDetected = false;
+                
+                if (window.detectGarbledText) {
+                    normalDetected = window.detectGarbledText(normalText);
+                    garbledDetected = window.detectGarbledText(garbledText);
+                }
+                
+                let fixedText = garbledText;
+                if (window.fixGarbledText) {
+                    fixedText = window.fixGarbledText(garbledText);
+                }
+                
+                testDiv.innerHTML = `
+                    <div class="success">
+                        ✅ 乱码检测测试通过<br>
+                        正常文本检测: ${normalDetected} (应该是false)<br>
+                        乱码文本检测: ${garbledDetected} (应该是true)<br>
+                        修复后文本: ${fixedText}
+                    </div>
+                `;
+                log('乱码检测测试通过', 'success');
+            } catch (error) {
+                testDiv.innerHTML = `<div class="error">❌ 乱码检测测试失败: ${error.message}</div>`;
+                log(`乱码检测测试失败: ${error.message}`, 'error');
+            }
+        }
+        
+        function testStorageFunctions() {
+            const testDiv = document.getElementById('storageTest');
+            try {
+                const testKey = 'utf8_test_key';
+                const testValue = {
+                    name: '测试用户',
+                    description: '这是一个测试描述',
+                    timestamp: new Date().toISOString()
+                };
+                
+                let setResult = false;
+                let getValue = null;
+                
+                if (window.setUTF8Storage && window.getUTF8Storage) {
+                    setResult = window.setUTF8Storage(testKey, testValue);
+                    getValue = window.getUTF8Storage(testKey);
+                } else {
+                    localStorage.setItem(testKey, JSON.stringify(testValue));
+                    getValue = JSON.parse(localStorage.getItem(testKey));
+                    setResult = true;
+                }
+                
+                // 清理测试数据
+                localStorage.removeItem(testKey);
+                
+                testDiv.innerHTML = `
+                    <div class="success">
+                        ✅ 存储功能测试通过<br>
+                        存储结果: ${setResult}<br>
+                        读取结果: <pre>${JSON.stringify(getValue, null, 2)}</pre>
+                    </div>
+                `;
+                log('存储功能测试通过', 'success');
+            } catch (error) {
+                testDiv.innerHTML = `<div class="error">❌ 存储功能测试失败: ${error.message}</div>`;
+                log(`存储功能测试失败: ${error.message}`, 'error');
+            }
+        }
+        
+        function testNetworkFunctions() {
+            const testDiv = document.getElementById('networkTest');
+            try {
+                if (window.fetchUTF8) {
+                    window.fetchUTF8('./data/about.json')
+                        .then(response => {
+                            if (response.ok) {
+                                return response.text();
+                            }
+                            throw new Error('网络请求失败');
+                        })
+                        .then(text => {
+                            testDiv.innerHTML = `
+                                <div class="success">
+                                    ✅ 网络请求测试通过<br>
+                                    获取到的数据长度: ${text.length} 字符
+                                </div>
+                            `;
+                            log('网络请求测试通过', 'success');
+                        })
+                        .catch(error => {
+                            testDiv.innerHTML = `<div class="error">❌ 网络请求测试失败: ${error.message}</div>`;
+                            log(`网络请求测试失败: ${error.message}`, 'error');
+                        });
+                } else {
+                    testDiv.innerHTML = `<div class="error">❌ fetchUTF8函数不可用</div>`;
+                    log('fetchUTF8函数不可用', 'error');
+                }
+            } catch (error) {
+                testDiv.innerHTML = `<div class="error">❌ 网络功能测试失败: ${error.message}</div>`;
+                log(`网络功能测试失败: ${error.message}`, 'error');
+            }
+        }
+        
+        function testBrowserCompatibility() {
+            const testDiv = document.getElementById('browserTest');
+            try {
+                const userAgent = navigator.userAgent;
+                const browserInfo = {
+                    userAgent: userAgent,
+                    charset: document.characterSet || document.charset,
+                    language: navigator.language,
+                    platform: navigator.platform
+                };
+                
+                if (window.detectBrowserEncoding) {
+                    window.detectBrowserEncoding();
+                }
+                
+                testDiv.innerHTML = `
+                    <div class="success">
+                        ✅ 浏览器兼容性测试完成<br>
+                        浏览器信息: <pre>${JSON.stringify(browserInfo, null, 2)}</pre>
+                    </div>
+                `;
+                log('浏览器兼容性测试完成', 'success');
+            } catch (error) {
+                testDiv.innerHTML = `<div class="error">❌ 浏览器兼容性测试失败: ${error.message}</div>`;
+                log(`浏览器兼容性测试失败: ${error.message}`, 'error');
+            }
+        }
+        
+        // 页面加载完成后自动运行所有测试
+        window.addEventListener('load', function() {
+            log('UTF-8编码工具测试页面已加载', 'success');
+            
+            // 等待encoding-utils.js完全加载
+            setTimeout(() => {
+                log('开始自动测试...', 'info');
+                testBasicUTF8();
+                setTimeout(() => testJSONParsing(), 100);
+                setTimeout(() => testObjectSanitization(), 200);
+                setTimeout(() => testGarbledTextDetection(), 300);
+                setTimeout(() => testStorageFunctions(), 400);
+                setTimeout(() => testNetworkFunctions(), 500);
+                setTimeout(() => testBrowserCompatibility(), 600);
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

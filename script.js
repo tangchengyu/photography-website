@@ -2854,13 +2854,17 @@ function initializeAboutSection() {
 function loadAboutInfo() {
     // 更新姓名
     const nameElement = document.getElementById('aboutName');
-    if (nameElement) {
+    if (nameElement && window.setUTF8Content) {
+        window.setUTF8Content(nameElement, aboutInfo.name);
+    } else if (nameElement) {
         nameElement.textContent = aboutInfo.name;
     }
     
     // 更新描述
     const descriptionElement = document.getElementById('aboutDescription');
-    if (descriptionElement) {
+    if (descriptionElement && window.setUTF8Content) {
+        window.setUTF8Content(descriptionElement, aboutInfo.description);
+    } else if (descriptionElement) {
         descriptionElement.innerHTML = aboutInfo.description;
     }
     
@@ -2874,9 +2878,32 @@ function updateContactInfo() {
     const qqElement = document.getElementById('qqContact');
     const emailElement = document.getElementById('emailContact');
     
-    if (wechatElement) wechatElement.textContent = aboutInfo.contacts.wechat;
-    if (qqElement) qqElement.textContent = aboutInfo.contacts.qq;
-    if (emailElement) emailElement.textContent = aboutInfo.contacts.email;
+    if (wechatElement) {
+        const wechatText = window.ensureUTF8 ? window.ensureUTF8(aboutInfo.contacts.wechat) : aboutInfo.contacts.wechat;
+        if (window.setUTF8Content) {
+            window.setUTF8Content(wechatElement, wechatText);
+        } else {
+            wechatElement.textContent = wechatText;
+        }
+    }
+    
+    if (qqElement) {
+        const qqText = window.ensureUTF8 ? window.ensureUTF8(aboutInfo.contacts.qq) : aboutInfo.contacts.qq;
+        if (window.setUTF8Content) {
+            window.setUTF8Content(qqElement, qqText);
+        } else {
+            qqElement.textContent = qqText;
+        }
+    }
+    
+    if (emailElement) {
+        const emailText = window.ensureUTF8 ? window.ensureUTF8(aboutInfo.contacts.email) : aboutInfo.contacts.email;
+        if (window.setUTF8Content) {
+            window.setUTF8Content(emailElement, emailText);
+        } else {
+            emailElement.textContent = emailText;
+        }
+    }
 }
 
 // 编辑联系信息

@@ -8,29 +8,38 @@
     X-XSS-Protection = "1; mode=block"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
+    Content-Language = "zh-CN"
 
 [[headers]]
   for = "*.html"
   [headers.values]
     Content-Type = "text/html; charset=utf-8"
+    Content-Language = "zh-CN"
+    Accept-Charset = "utf-8"
 
 [[headers]]
   for = "*.css"
   [headers.values]
     Content-Type = "text/css; charset=utf-8"
+    Accept-Charset = "utf-8"
 
 [[headers]]
   for = "*.js"
   [headers.values]
     Content-Type = "application/javascript; charset=utf-8"
+    Accept-Charset = "utf-8"
 
 [[headers]]
   for = "*.json"
   [headers.values]
     Content-Type = "application/json; charset=utf-8"
+    Accept-Charset = "utf-8"
+    Content-Language = "zh-CN"
 
 [[headers]]
   for = "/data/*"
   [headers.values]
     Content-Type = "application/json; charset=utf-8"
+    Accept-Charset = "utf-8"
+    Content-Language = "zh-CN"
     Cache-Control = "public, max-age=300"
