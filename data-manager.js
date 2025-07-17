@@ -705,24 +705,30 @@ class DataManager {
         
         // 首先尝试从about.json文件加载数据
         try {
-            // 使用强制UTF-8编码的fetch函数
-            const response = await window.fetchUTF8('./data/about.json');
+            // 使用标准fetch
+            const response = await fetch('./data/about.json', {
+                headers: {
+                    'Accept': 'application/json; charset=utf-8',
+                    'Content-Type': 'application/json; charset=utf-8'
+                }
+            });
             if (response && response.ok) {
                 const text = await response.text();
-                // 检测并修复可能的乱码
-                const cleanText = window.fixGarbledText(text);
-                // 使用专门的UTF-8 JSON解析函数
-                const jsonData = window.parseUTF8JSON(cleanText);
+                const jsonData = await response.json();
                 if (jsonData && Object.keys(jsonData).length > 0) {
-                    // 批量处理所有字符串字段，确保UTF-8编码正确
-                    aboutInfo = window.sanitizeObjectUTF8(jsonData);
+                    aboutInfo = jsonData;
                     console.log('从about.json文件加载关于我数据成功');
+                    // 更新缓存并直接返回，不再检查其他源
+                    this.cache.about = aboutInfo;
+                    this.setCacheTimestamp('about');
+                    return aboutInfo;
                 }
             }
         } catch (error) {
             console.warn('从about.json文件加载数据失败:', error);
         }
-        
+
+        // 仅在 about.json 加载失败时，才尝试从 GitHub 加载
         if (this.isGitHubConfigured()) {
             try {
                 const cloudData = await this.getFileFromGitHub(this.dataFiles.about);

@@ -350,7 +350,8 @@ async function loadAllData() {
                 // 加载关于我数据
                 const loadedAboutInfo = await window.dataManager.getAboutInfo();
                 if (loadedAboutInfo) {
-                    aboutInfo = { ...aboutInfo, ...loadedAboutInfo };
+                    aboutInfo = loadedAboutInfo;
+                    console.log('成功从about.json加载关于我数据:', aboutInfo);
                 }
                 
             } catch (error) {
@@ -388,7 +389,8 @@ async function loadDataFromLocalStorage() {
         
         const savedAboutInfo = localStorage.getItem('aboutInfo');
         if (savedAboutInfo) {
-            aboutInfo = { ...aboutInfo, ...JSON.parse(savedAboutInfo) };
+            aboutInfo = JSON.parse(savedAboutInfo);
+            console.log('从localStorage加载关于我数据:', aboutInfo);
         }
         
         console.log('本地数据加载完成');
