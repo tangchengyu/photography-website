@@ -187,7 +187,10 @@ class DataManager {
             const result = await manager.createOrUpdateFile(path, base64Content, message, sha);
             
             // 返回GitHub Pages的访问URL
-            const githubPagesUrl = manager.getGitHubPagesUrl() + '/' + path;
+            const baseUrl = manager.getGitHubPagesUrl();
+            // 对路径进行URL编码，确保中文字符能正确访问
+            const encodedPath = path.split('/').map(segment => encodeURIComponent(segment)).join('/');
+            const githubPagesUrl = baseUrl + (baseUrl.endsWith('/') ? '' : '/') + encodedPath;
             
             return {
                 success: true,

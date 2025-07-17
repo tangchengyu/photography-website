@@ -1308,6 +1308,10 @@ function renderGallery(filteredPhotos = null) {
 // 渲染文件夹视图
 function renderFolderView() {
     const galleryGrid = document.getElementById('galleryGrid');
+    if (!galleryGrid) {
+        console.error('galleryGrid element not found');
+        return;
+    }
     
     // 获取当前分类下的文件夹
     let categoryFolders = folders.filter(folder => {
@@ -1386,6 +1390,10 @@ function renderFolderView() {
 // 渲染图片视图
 function renderPhotoView(filteredPhotos = null) {
     const galleryGrid = document.getElementById('galleryGrid');
+    if (!galleryGrid) {
+        console.error('galleryGrid element not found');
+        return;
+    }
     let photosToShow = filteredPhotos || photos;
     
     // 如果指定了文件夹，只显示该文件夹下的图片
@@ -1469,17 +1477,39 @@ function renderPhotoView(filteredPhotos = null) {
 
 // 根据用户身份获取图片URL
 function getImageUrlForUser(photo) {
+    let url;
+    
     // 兼容旧数据格式
     if (photo.url && !photo.originalUrl && !photo.watermarkedUrl) {
-        return photo.url;
+        url = photo.url;
+    } else {
+        // 新数据格式：管理员看原图，游客看水印图
+        if (isAdmin) {
+            url = photo.originalUrl || photo.url;
+        } else {
+            url = photo.watermarkedUrl || photo.url;
+        }
     }
     
-    // 新数据格式：管理员看原图，游客看水印图
-    if (isAdmin) {
-        return photo.originalUrl || photo.url;
-    } else {
-        return photo.watermarkedUrl || photo.url;
+    // 如果URL包含中文字符且不是data:或http://localhost开头，需要进行URL编码处理
+    if (url && !url.startsWith('data:') && !url.startsWith('http://localhost') && !url.startsWith('https://localhost')) {
+        // 检查URL是否包含中文字符或其他需要编码的字符
+        if (/[\u4e00-\u9fa5]/.test(url) || /[^\x00-\x7F]/.test(url)) {
+            // 分割URL，只对路径部分进行编码，保留协议和域名
+            const urlParts = url.split('/');
+            if (urlParts.length > 3) {
+                // 对路径部分进行编码（跳过协议和域名部分）
+                for (let i = 3; i < urlParts.length; i++) {
+                    if (urlParts[i] && !urlParts[i].includes('%')) { // 避免重复编码
+                        urlParts[i] = encodeURIComponent(urlParts[i]);
+                    }
+                }
+                url = urlParts.join('/');
+            }
+        }
     }
+    
+    return url;
 }
 
 // 筛选图片
@@ -2086,8 +2116,13 @@ async function uploadImages() {
                     const timestamp = Date.now();
                     const originalFileName = `original_${timestamp}_${index}_${file.name}`;
                     const watermarkedFileName = `watermarked_${timestamp}_${index}_${file.name}`;
-                    const categoryPath = getCategoryDisplayName(finalCategory).replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_');
-                    const folderPath = selectedFolder ? selectedFolder.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_') : 'default';
+                    
+                    // 对中文字符进行URL编码处理，确保GitHub Pages能正确访问
+                    const categoryDisplayName = getCategoryDisplayName(finalCategory);
+                    const categoryPath = encodeURIComponent(categoryDisplayName.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_'));
+                    const folderPath = selectedFolder ? 
+                        encodeURIComponent(selectedFolder.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_')) : 
+                        'default';
                     
                     const originalPath = `images/${categoryPath}/${folderPath}/original/${originalFileName}`;
                     const watermarkedPath = `images/${categoryPath}/${folderPath}/watermarked/${watermarkedFileName}`;

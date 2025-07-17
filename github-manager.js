@@ -157,7 +157,8 @@ class GitHubManager {
         try {
             const body = {
                 message,
-                content: btoa(unescape(encodeURIComponent(content))), // 正确编码UTF-8
+                // 如果content已经是base64格式（二进制文件），直接使用；否则进行UTF-8编码
+                content: this.isBase64(content) ? content : btoa(unescape(encodeURIComponent(content))),
                 branch: this.branch
             };
 
@@ -324,6 +325,24 @@ class GitHubManager {
             return null;
         }
         return `https://${this.owner}.github.io/${this.repo}`;
+    }
+
+    // 检测字符串是否为base64格式
+    isBase64(str) {
+        if (typeof str !== 'string') {
+            return false;
+        }
+        
+        // 检查是否只包含base64字符
+        const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
+        
+        // 检查长度是否为4的倍数
+        if (str.length % 4 !== 0) {
+            return false;
+        }
+        
+        // 检查是否符合base64格式
+        return base64Regex.test(str);
     }
 }
 
