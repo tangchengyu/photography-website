@@ -21,20 +21,81 @@ class DataManager {
             about: null
         };
         
+        // 初始化状态
+        this.isInitialized = false;
+        
         // 缓存过期时间（毫秒）
         this.cacheExpiry = 30 * 1000; // 30秒，确保能及时获取最新数据
         this.cacheTimestamps = {};
         
-        // 初始化
-        this.init();
+        // 注意：init()方法将在GitHub管理器准备就绪后被外部调用
     }
     
     async init() {
-        // 等待GitHub管理器初始化
-        if (window.githubManager) {
-            console.log('数据管理器已初始化');
-        } else {
-            console.warn('GitHub管理器未找到，仅支持本地存储');
+        try {
+            // 等待GitHub管理器初始化
+            if (window.githubManager) {
+                console.log('数据管理器开始初始化...');
+                
+                // 初始化数据文件
+                await this.initializeDataFiles();
+                
+                console.log('数据管理器初始化完成');
+            } else {
+                console.warn('GitHub管理器未找到，数据管理器将仅使用本地存储');
+            }
+        } catch (error) {
+            console.error('数据管理器初始化失败:', error);
+        } finally {
+            // 无论成功还是失败，都标记为已初始化
+            this.isInitialized = true;
+        }
+    }
+    
+    // 初始化数据文件（如果GitHub中不存在则创建）
+    async initializeDataFiles() {
+        if (!this.isGitHubConfigured()) {
+            return;
+        }
+        
+        try {
+            const manager = this.getGitHubManager();
+            
+            // 检查并创建各个数据文件
+            const filesToCheck = [
+                { path: this.dataFiles.photos, defaultData: [] },
+                { path: this.dataFiles.notes, defaultData: [] },
+                { path: this.dataFiles.categories, defaultData: [] },
+                { path: this.dataFiles.folders, defaultData: [] },
+                { path: this.dataFiles.about, defaultData: {} }
+            ];
+            
+            for (const file of filesToCheck) {
+                try {
+                    const existingFile = await manager.getFile(file.path);
+                    if (!existingFile) {
+                        // 文件不存在，创建默认文件
+                        console.log(`创建初始数据文件: ${file.path}`);
+                        const content = JSON.stringify(file.defaultData, null, 2);
+                        const message = `初始化数据文件: ${file.path}`;
+                        await manager.createOrUpdateFile(file.path, content, message);
+                    }
+                } catch (error) {
+                    // 如果是404错误，说明文件不存在，创建文件
+                    if (error.message.includes('404') || error.message.includes('获取文件失败')) {
+                        console.log(`文件不存在，创建初始数据文件: ${file.path}`);
+                        const content = JSON.stringify(file.defaultData, null, 2);
+                        const message = `初始化数据文件: ${file.path}`;
+                        await manager.createOrUpdateFile(file.path, content, message);
+                    } else {
+                        console.warn(`检查文件 ${file.path} 时出错:`, error);
+                    }
+                }
+            }
+            
+            console.log('数据文件初始化完成');
+        } catch (error) {
+            console.error('初始化数据文件失败:', error);
         }
     }
     
@@ -658,3 +719,20 @@ class DataManager {
 
 // 创建全局数据管理器实例
 window.dataManager = new DataManager();
+
+// 当GitHub管理器准备就绪时，初始化数据管理器
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', async () => {
+        // 等待GitHub管理器初始化完成
+        if (window.githubManager) {
+            await window.dataManager.init();
+        }
+    });
+} else {
+    // 如果DOM已经加载完成，立即初始化
+    setTimeout(async () => {
+        if (window.githubManager) {
+            await window.dataManager.init();
+        }
+    }, 100); // 给GitHub管理器一点时间初始化
+}

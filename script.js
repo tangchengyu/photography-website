@@ -84,9 +84,26 @@ let currentSelectedFolder = null; // 当前选中的文件夹ID
 let currentCategory = 'all'; // 当前选中的分类
 
 // 页面加载完成后初始化
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     showLoginModal();
-    initializeApp();
+    
+    // 等待DataManager初始化完成后再初始化应用
+    if (window.dataManager) {
+        // 等待DataManager初始化完成
+        let retryCount = 0;
+        const maxRetries = 10;
+        
+        while (!window.dataManager.isInitialized && retryCount < maxRetries) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            retryCount++;
+        }
+        
+        if (retryCount >= maxRetries) {
+            console.warn('DataManager初始化超时，继续启动应用');
+        }
+    }
+    
+    await initializeApp();
 });
 
 // 显示登录模态框
