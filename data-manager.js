@@ -694,12 +694,12 @@ class DataManager {
         }
         
         let aboutInfo = {
-            name: 'Default Name',
-            description: '<p>Default description</p>',
+            name: '于果',
+            description: '<p>我是一颗小果子</p>',
             contacts: {
-                wechat: 'default_wechat',
-                qq: '000000000',
-                email: 'default@example.com'
+                wechat: 'yg12345',
+                qq: '12345',
+                email: 'yuguo@example.com'
             }
         };
         
