@@ -1083,7 +1083,7 @@ function updateSelectionUI() {
     const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
     
     selectAllBtn.textContent = selectedPhotos.length > 0 ? '取消全选' : '全选';
-    deleteSelectedBtn.textContent = `🗑️ 删除选中 (${selectedPhotos.length})`;
+    deleteSelectedBtn.textContent = `&#128465; 删除选中 (${selectedPhotos.length})`;
     deleteSelectedBtn.disabled = selectedPhotos.length === 0;
 }
 
@@ -1317,7 +1317,7 @@ function initializeGallery() {
         refreshBtn.addEventListener('click', async function() {
             try {
                 // 显示加载状态
-                this.innerHTML = '🔄 刷新中...';
+                this.innerHTML = '&#128260; 刷新中...';
                 this.disabled = true;
                 
                 // 强制刷新照片数据
@@ -1343,7 +1343,7 @@ function initializeGallery() {
                 showNotification('刷新失败，请稍后重试', 'error');
             } finally {
                 // 恢复按钮状态
-                this.innerHTML = '🔄 刷新';
+                this.innerHTML = '&#128260; 刷新';
                 this.disabled = false;
             }
         });
@@ -1400,7 +1400,7 @@ function renderFolderView() {
     if (categoryFolders.length === 0) {
         galleryGrid.innerHTML = `
             <div class="empty-state" style="grid-column: 1 / -1;">
-                <div class="empty-state-icon">📁</div>
+                <div class="empty-state-icon">&#128193;</div>
                 <div class="empty-state-text">该分类下还没有文件夹</div>
                 <div class="empty-state-subtext">上传图片时可以创建新文件夹</div>
             </div>
@@ -1423,11 +1423,11 @@ function renderFolderView() {
             <div class="gallery-item folder-item" data-folder-id="${folder.id}" onclick="openFolder('${folder.id}')">
                 ${isAdmin ? `
                     <div class="folder-actions">
-                        <button class="action-btn delete-folder-btn" onclick="event.stopPropagation(); deleteFolder('${folder.id}')" title="删除文件夹">🗑️</button>
+                        <button class="action-btn delete-folder-btn" onclick="event.stopPropagation(); deleteFolder('${folder.id}')" title="删除文件夹">&#128465;</button>
                     </div>
                 ` : ''}
                 <div class="folder-icon">
-                    <div class="folder-icon-bg">📁</div>
+                    <div class="folder-icon-bg">&#128193;</div>
                     <div class="folder-photo-count">${photoCount}</div>
                 </div>
                 <div class="gallery-item-info">
@@ -1474,7 +1474,7 @@ function renderPhotoView(filteredPhotos = null) {
         const folderName = currentSelectedFolder ? getFolderDisplayName(currentSelectedFolder) : '';
         galleryGrid.innerHTML = `
             <div class="empty-state" style="grid-column: 1 / -1;">
-                <div class="empty-state-icon">📷</div>
+                <div class="empty-state-icon">&#128247;</div>
                 <div class="empty-state-text">${folderName ? `${folderName}中` : ''}还没有上传任何作品</div>
                 <div class="empty-state-subtext">点击上传按钮开始分享你的摄影作品吧！</div>
                 ${currentSelectedFolder !== null ? `<button class="back-to-folders-btn" onclick="backToFolders()">← 返回文件夹视图</button>` : ''}
@@ -1495,8 +1495,8 @@ function renderPhotoView(filteredPhotos = null) {
                 ${isAdmin ? `
                     <input type="checkbox" class="photo-checkbox" onclick="event.stopPropagation(); togglePhotoSelection('${photo.id}')">
                     <div class="photo-actions">
-                        <button class="action-btn replace-btn" onclick="event.stopPropagation(); replacePhoto('${photo.id}')" title="替换图片">🔄</button>
-                        <button class="action-btn delete-single-btn" onclick="event.stopPropagation(); deletePhoto('${photo.id}')" title="删除图片">🗑️</button>
+                        <button class="action-btn replace-btn" onclick="event.stopPropagation(); replacePhoto('${photo.id}')" title="替换图片">&#128260;</button>
+                        <button class="action-btn delete-single-btn" onclick="event.stopPropagation(); deletePhoto('${photo.id}')" title="删除图片">&#128465;</button>
                     </div>
                 ` : ''}
                 <img src="${imageUrl}" alt="${photo.title}" loading="lazy">
@@ -1505,7 +1505,7 @@ function renderPhotoView(filteredPhotos = null) {
                     <p class="gallery-item-description">${photo.description}</p>
                     <div class="gallery-item-meta">
                         <span class="gallery-item-category">${getCategoryDisplayName(photo.category)}</span>
-                        ${folderName ? `<span class="gallery-item-folder">📁 ${folderName}</span>` : ''}
+                        ${folderName ? `<span class="gallery-item-folder">&#128193; ${folderName}</span>` : ''}
                     </div>
                 </div>
                 ${currentSelectedFolder !== null ? `<div class="back-to-folders"><button class="back-to-folders-btn" onclick="backToFolders()">← 返回文件夹</button></div>` : ''}
@@ -2447,7 +2447,7 @@ async function completeUpload() {
         if (uploadArea) {
             uploadArea.innerHTML = `
                 <div class="upload-content">
-                    <div class="upload-icon">📷</div>
+                    <div class="upload-icon">&#128247;</div>
                     <p>点击或拖拽图片到这里上传</p>
                 </div>
             `;
@@ -2547,7 +2547,7 @@ function renderNotesList() {
     if (notes.length === 0) {
         notesList.innerHTML = `
             <div class="empty-state">
-                <div class="empty-state-icon">📝</div>
+                <div class="empty-state-icon">&#128221;</div>
                 <div class="empty-state-text">还没有任何记录</div>
                 <div class="empty-state-subtext">点击新建记录开始记录你的成长路径</div>
             </div>
@@ -2750,7 +2750,7 @@ async function createWelcomeNote() {
     const welcomeNote = {
         id: 'note_welcome',
         title: '欢迎来到我的摄影世界',
-        content: `今天开始了我的摄影记录之旅！\n\n在这里，我将记录：\n• 摄影技巧的学习心得\n• 每次拍摄的感悟和收获\n• 创作灵感和想法\n• 成长路径上的重要时刻\n\n希望通过镜头，我能捕捉到更多生活中的美好瞬间，也希望通过文字，记录下这段美妙的摄影旅程。\n\n让我们开始吧！📷✨`,
+        content: `今天开始了我的摄影记录之旅！\n\n在这里，我将记录：\n• 摄影技巧的学习心得\n• 每次拍摄的感悟和收获\n• 创作灵感和想法\n• 成长路径上的重要时刻\n\n希望通过镜头，我能捕捉到更多生活中的美好瞬间，也希望通过文字，记录下这段美妙的摄影旅程。\n\n让我们开始吧！&#128247;&#10024;`,
         createdAt: new Date().toISOString(),
         lastModified: new Date().toISOString()
     };

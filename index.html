@@ -63,7 +63,7 @@
                 <button class="filter-btn" data-category="social">社会景观</button>
                 <button class="filter-btn admin-only" data-category="love" style="display: none;">恋爱空间</button>
                 <button class="filter-btn" data-category="custom">自定义</button>
-                <button class="refresh-btn" id="refreshGalleryBtn" title="刷新图片数据">🔄 刷新</button>
+                <button class="refresh-btn" id="refreshGalleryBtn" title="刷新图片数据">&#128260; 刷新</button>
             </div>
             
             <!-- 文件夹筛选 -->
@@ -78,10 +78,10 @@
             <div class="photo-management admin-only" style="display: none;">
                 <div class="management-tools">
                     <input type="text" id="searchInput" placeholder="搜索图片标题或描述..." class="search-input">
-                    <button id="searchBtn" class="tool-btn">🔍 搜索</button>
+                    <button id="searchBtn" class="tool-btn">&#128269; 搜索</button>
                     <button id="clearSearchBtn" class="tool-btn">清除搜索</button>
                     <button id="selectAllBtn" class="tool-btn">全选</button>
-                    <button id="deleteSelectedBtn" class="tool-btn delete-btn">🗑️ 删除选中</button>
+                    <button id="deleteSelectedBtn" class="tool-btn delete-btn">&#128465; 删除选中</button>
                 </div>
             </div>
 
@@ -147,7 +147,7 @@
                     
                     <div class="upload-area" id="uploadArea">
                         <div class="upload-content">
-                            <div class="upload-icon">📷</div>
+                            <div class="upload-icon">&#128247;</div>
                             <p>点击或拖拽图片到这里上传</p>
                             <div class="upload-hint">支持 JPG、PNG、GIF 格式，最多可选择10张图片</div>
                             <input type="file" id="imageInput" accept="image/*" multiple style="display: none;">
@@ -218,19 +218,19 @@
                     
                     <div class="contact-info">
                         <div class="contact-item">
-                            <span class="contact-icon">📱</span>
+                            <span class="contact-icon">&#128241;</span>
                             <span class="contact-label">微信：</span>
                             <span class="contact-value" id="wechatContact"></span>
                             <button class="edit-btn admin-only" onclick="editContact('wechat')" style="display: none;">✏️</button>
                         </div>
                         <div class="contact-item">
-                            <span class="contact-icon">💬</span>
+                            <span class="contact-icon">&#128172;</span>
                             <span class="contact-label">QQ：</span>
                             <span class="contact-value" id="qqContact"></span>
                             <button class="edit-btn admin-only" onclick="editContact('qq')" style="display: none;">✏️</button>
                         </div>
                         <div class="contact-item">
-                            <span class="contact-icon">📧</span>
+                            <span class="contact-icon">&#128231;</span>
                             <span class="contact-label">邮箱：</span>
                             <span class="contact-value" id="emailContact"></span>
                             <button class="edit-btn admin-only" onclick="editContact('email')" style="display: none;">✏️</button>
